@@ -43,7 +43,8 @@ def sec2_example(filename, n):
     def renderer(c, shader, px, py):
         x, y = TegVar('x'), TegVar('y')
         cond = SumDiffeo((c,), (x, y))
-        offset = 3
+        # offset = 3
+        offset = 1
         mx, my = BoundedLebesgue((px - (offset + 1)), (px - offset), x), BoundedLebesgue((py - (offset + 1)), (py - offset), y)
         integrand = App(shader, (x, y, c)) * Heaviside(cond)
         return Int(Int(integrand, mx), my)
@@ -81,9 +82,12 @@ def sec2_example(filename, n):
     # params = [c]
     # dparams = [dc]
     init_param_vals = np.array([0.2, 0, 0])
+    eps = 0.0001
+    init_param_vals_eps = np.array([0.2 - eps, 0, 0])
+
     # init_param_vals = np.array([-0.2])
 
-    imgs, dimgs = [], []
+    imgs, dimgs, fdimgs = [], [], []
     image = Const(0.5)
     dimage = Const(0)
     for shader, dshader in [(s1, ds1), (s2, ds2), (s3, ds3)]:
@@ -97,14 +101,19 @@ def sec2_example(filename, n):
         ny = n
         img = np.zeros((nx, ny))
         dimg = np.zeros((nx, ny))
+        fdimg = np.zeros((nx, ny))
         for i in range(nx):
             for j in range(ny):
                 init_param_vals[1] = i / 4
                 init_param_vals[2] = j / 4
+                # if i == 9 and j == 9:
+                #     pass
                 img[i, j] = eval_expr(e, init_param_vals, params)
+                fdimg[i, j] = (eval_expr(e, init_param_vals, params) - eval_expr(e, init_param_vals_eps, params)) / eps
                 dimg[i, j] = eval_grad_expr(de, init_param_vals, params, dparams)
         imgs.append(img)
         dimgs.append(dimg)
+        fdimgs.append(fdimg)
 
     for i, img in enumerate(imgs):
         print(f'{i}\t{img}')
@@ -124,6 +133,8 @@ def sec2_example(filename, n):
         pickle.dump(imgs, f)
     with open(f'd{filename}', 'wb') as f:
         pickle.dump(dimgs, f)
+    with open(f'fd{filename}', 'wb') as f:
+        pickle.dump(fdimgs, f)
 
 
 def plot(filename):
@@ -169,7 +180,7 @@ def plot(filename):
 
 
 if __name__ == "__main__":
-    n = 40
-    filename = f"dimgs_shift{n}x{n}.pkl"
-    # sec2_example(filename, n)
+    n = 10
+    filename = f"fdimgs_shift{n}x{n}.pkl"
+    sec2_example(filename, n)
     plot(filename)
