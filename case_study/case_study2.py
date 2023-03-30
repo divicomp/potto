@@ -43,7 +43,8 @@ def sec2_example(filename, n):
     def renderer(c, shader, px, py):
         x, y = TegVar('x'), TegVar('y')
         cond = SumDiffeo((c,), (x, y))
-        mx, my = BoundedLebesgue(px - 3, px - 2, x), BoundedLebesgue(py - 3, py - 2, y)
+        offset = 3
+        mx, my = BoundedLebesgue((px - (offset + 1)), (px - offset), x), BoundedLebesgue((py - (offset + 1)), (py - offset), y)
         integrand = App(shader, (x, y, c)) * Heaviside(cond)
         return Int(Int(integrand, mx), my)
 
@@ -98,10 +99,10 @@ def sec2_example(filename, n):
         dimg = np.zeros((nx, ny))
         for i in range(nx):
             for j in range(ny):
-                init_param_vals[1] = i
-                init_param_vals[2] = j
+                init_param_vals[1] = i / 4
+                init_param_vals[2] = j / 4
                 img[i, j] = eval_expr(e, init_param_vals, params)
-                dimg[i, j] = eval_grad_expr(de, init_param_vals, params, dparams)[0]
+                dimg[i, j] = eval_grad_expr(de, init_param_vals, params, dparams)
         imgs.append(img)
         dimgs.append(dimg)
 
@@ -131,17 +132,21 @@ def plot(filename):
         imgs = pickle.load(f)
     print(imgs)
 
+
     f, ax = plt.subplots(1, 3)
     # , "interpolation": "none"
-    n = 10
-    kwargs = {"cmap": "Greys", "vmin": 0, "vmax": 1}
+    n = 40
+    # kwargs = {"cmap": "Greys", "vmin": 0, "vmax": 1}
+    cmap = plt.get_cmap('gray')
+    kwargs = {"cmap": cmap, "vmin": 0, "vmax": 1}
     titles = ['Const Shader', 'Linear Shader', 'Quadratic Shader']
     for i, title in enumerate(titles):
-        ax[i].imshow(1 - imgs[i][0:n, 0:n], **kwargs)
+        ax[i].imshow(imgs[i][0:n, 0:n], **kwargs)
         ax[i].set_title(title)
         ax[i].set_xticks([])
         ax[i].set_yticks([])
-
+        # ax[i]._colorbars()
+    # plt.colorbar()
     plt.show()
 
     # plt.figure(figsize=(8, 6), dpi=80)
@@ -165,6 +170,6 @@ def plot(filename):
 
 if __name__ == "__main__":
     n = 40
-    filename = f"imgs_shift{n}x{n}.pkl"
+    filename = f"dimgs_shift{n}x{n}.pkl"
     # sec2_example(filename, n)
     plot(filename)

@@ -60,18 +60,18 @@ def list_to_param(params, vals):
 
 def eval_expr(e, ps, params):
     param_vals = list_to_param(params, ps)
-    ret = evaluate_all(e, VarVal(param_vals), num_samples=10)
+    ret = evaluate_all(e, VarVal(param_vals), num_samples=5)
     print(f'eval: {ps}\n\t: {ret}')
     return ret
 
 
 def eval_grad_expr(de, ps, params, dparams):
     grad = []
-    for dparam in dparams:
+    for dparam in dparams[:1]:
         differential = {dp.name: 0 for dp in dparams}
         differential[dparam.name] = 1
         dparam_vals = list_to_param(params, ps) | differential
-        dc_eval = evaluate_all(de, VarVal(dparam_vals), num_samples=10)
+        dc_eval = evaluate_all(de, VarVal(dparam_vals), num_samples=5)
         grad.append(dc_eval)
     print(f'grad: {ps}\n\t: {grad}')
-    return grad
+    return grad[0]
