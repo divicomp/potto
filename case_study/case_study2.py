@@ -5,19 +5,19 @@ from numbers import Number
 from unittest import TestCase
 import numpy as np
 import sys
+import pickle
 from typing import Callable
 from inspect import signature
 import scipy.optimize as spop
 import matplotlib.pyplot as plt
-import pickle
 
 from potto import Shift, Affine, ShiftRight
 from potto import (
     Delta,
     Measure,
     Var,
-    TegVar,
     Heaviside,
+    TegVar,
     GExpr,
     Const,
     Int,
@@ -81,8 +81,8 @@ def sec2_example(filename, n):
     dparams = [dc, dpx, dpy]
     # params = [c]
     # dparams = [dc]
+    eps = 0.01
     init_param_vals = np.array([0.2, 0, 0])
-    eps = 0.0001
     init_param_vals_eps = np.array([0.2 - eps, 0, 0])
 
     # init_param_vals = np.array([-0.2])
@@ -102,14 +102,16 @@ def sec2_example(filename, n):
         img = np.zeros((nx, ny))
         dimg = np.zeros((nx, ny))
         fdimg = np.zeros((nx, ny))
-        for i in range(nx):
-            for j in range(ny):
+        for i in reversed(range(nx)):
+            for j in (range(ny)):
                 init_param_vals[1] = i / 4
                 init_param_vals[2] = j / 4
+                init_param_vals_eps[1] = i / 4
+                init_param_vals_eps[2] = j / 4
                 # if i == 9 and j == 9:
                 #     pass
                 img[i, j] = eval_expr(e, init_param_vals, params)
-                fdimg[i, j] = (eval_expr(e, init_param_vals, params) - eval_expr(e, init_param_vals_eps, params)) / eps
+                fdimg[i, j] = (img[i, j] - eval_expr(e, init_param_vals_eps, params)) / eps
                 dimg[i, j] = eval_grad_expr(de, init_param_vals, params, dparams)
         imgs.append(img)
         dimgs.append(dimg)
@@ -181,6 +183,7 @@ def plot(filename):
 
 if __name__ == "__main__":
     n = 10
-    filename = f"fdimgs_shift{n}x{n}.pkl"
+    filename = f"imgs_shift{n}x{n}.pkl"
     sec2_example(filename, n)
+    filename = f"dimgs_shift{n}x{n}.pkl"
     plot(filename)
