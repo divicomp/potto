@@ -10,6 +10,7 @@ from typing import Callable
 from inspect import signature
 import scipy.optimize as spop
 import matplotlib.pyplot as plt
+import cmasher as cmr
 
 from potto import Shift, Affine, ShiftRight
 from potto import (
@@ -43,8 +44,8 @@ def sec2_example(filename, n):
     def renderer(c, shader, px, py):
         x, y = TegVar('x'), TegVar('y')
         cond = SumDiffeo((c,), (x, y))
-        # offset = 3
-        offset = 1
+        offset = 3
+        # offset = 1
         mx, my = BoundedLebesgue((px - (offset + 1)), (px - offset), x), BoundedLebesgue((py - (offset + 1)), (py - offset), y)
         integrand = App(shader, (x, y, c)) * Heaviside(cond)
         return Int(Int(integrand, mx), my)
@@ -139,7 +140,7 @@ def sec2_example(filename, n):
         pickle.dump(fdimgs, f)
 
 
-def plot(filename):
+def plot(filename, cmap='gray', vmin=0, vmax=1):
     # with open(f'd{filename}', 'rb') as f:
     with open(filename, 'rb') as f:
         imgs = pickle.load(f)
@@ -147,19 +148,22 @@ def plot(filename):
 
 
     f, ax = plt.subplots(1, 3)
+    ps = []
     # , "interpolation": "none"
     n = 40
     # kwargs = {"cmap": "Greys", "vmin": 0, "vmax": 1}
-    cmap = plt.get_cmap('gray')
-    kwargs = {"cmap": cmap, "vmin": 0, "vmax": 1}
+    cmap = plt.get_cmap(cmap)
+    kwargs = {"cmap": cmap, "vmin": vmin, "vmax": vmax}
     titles = ['Const Shader', 'Linear Shader', 'Quadratic Shader']
     for i, title in enumerate(titles):
-        ax[i].imshow(imgs[i][0:n, 0:n], **kwargs)
+        p = ax[i].imshow(imgs[i][0:n, 0:n], **kwargs)
+        ps.append(p)
         ax[i].set_title(title)
         ax[i].set_xticks([])
         ax[i].set_yticks([])
         # ax[i]._colorbars()
-    # plt.colorbar()
+    cax = f.add_axes([ax[-1].get_position().x1 + 0.01, ax[-1].get_position().y0, 0.02, ax[-1].get_position().height])
+    f.colorbar(ps[-1], cax=cax)
     plt.show()
 
     # plt.figure(figsize=(8, 6), dpi=80)
@@ -182,8 +186,12 @@ def plot(filename):
 
 
 if __name__ == "__main__":
-    n = 10
-    filename = f"imgs_shift{n}x{n}.pkl"
-    sec2_example(filename, n)
-    filename = f"dimgs_shift{n}x{n}.pkl"
+    n = 40
+    # filename = f"imgs_shift{n}x{n}diffeo10res.pkl"
+    # sec2_example(filename, n)
+    filename = f"imgs_shift{n}x{n}10res.pkl"
     plot(filename)
+    filename = f"fdimgs_shift{n}x{n}10res.pkl"
+    plot(filename)
+    filename = f"dimgs_shift{n}x{n}10res.pkl"
+    plot(filename, cmap='cmr.seasons_s', vmin=-1, vmax=1)

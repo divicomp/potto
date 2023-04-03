@@ -1,4 +1,5 @@
 import itertools
+import numpy as np
 
 from potto.lang.grammar import Var, TegVar, GExpr, Diffeomorphism
 from potto.lang.evaluate import evaluate
@@ -46,8 +47,8 @@ class Affine(Diffeomorphism):
 
 class SumDiffeo(Affine):
     """
-    f(x, y) = x + y + c, x - y + c
-    f-1(w, z) = (w + z - 2c)/2, (w - z) / 2
+    f(x, y) = √2 (x + y) - (c + 0.5), √2 (x - y) - (c + 0.5)
+    f-1(w, z) = (w + z + 2c) / 2√2, (w - z) / 2√2
     """
 
     def __str__(self):
@@ -56,12 +57,12 @@ class SumDiffeo(Affine):
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
         c, = vars
         x, y = tvars
-        return x + y + c, x - y + c
+        return np.sqrt(2) * (x + y) - (c + 0.5), np.sqrt(2) * (x - y) - (c + 0.5)
 
     def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
         c, = vars
         w, z = tvars
-        return (w + z - 2 * c) / 2, (w - z) / 2
+        return (w + z + 2 * (c + 0.5)) / (2 * np.sqrt(2)), (w - z) / (2 * np.sqrt(2))
 
 
 class QuadraticSquaredMinus1(Diffeomorphism):
