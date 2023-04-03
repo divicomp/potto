@@ -387,7 +387,7 @@ def evaluate(
             if not gen_samples.is_empty():
                 integrand_val = evaluate(integrand, new_env, num_samples, new_gen)
                 tvar_sample = gen_samples[measure.tvar.name]
-                measure_lower, measure_upper = measure.get_bounds(env, num_samples, gen_samples)
+                measure_lower, measure_upper = measure.get_bounds(env, num_samples, TraceEnv())
                 if not measure_lower < tvar_sample.sample < measure_upper:
                     return 0
                 weight = tvar_sample.weight
