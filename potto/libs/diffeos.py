@@ -47,7 +47,7 @@ class Affine(Diffeomorphism):
 
 class SumDiffeo(Affine):
     """
-    f(x, y) = √2 (x + y) - (c + 0.5), √2 (x - y) - (c + 0.5)
+    f(x, y) = √2 (x + y) - (c + 1), √2 (x - y) - (c + 1)
     f-1(w, z) = (w + z + 2c) / 2√2, (w - z) / 2√2
     """
 
@@ -57,12 +57,12 @@ class SumDiffeo(Affine):
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
         c, = vars
         x, y = tvars
-        return np.sqrt(2) * (x + y) - (c + 0.5), np.sqrt(2) * (x - y) - (c + 0.5)
+        return np.sqrt(0.5) * (x + y) - c, np.sqrt(0.5) * (x - y) - c
 
     def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
         c, = vars
         w, z = tvars
-        return (w + z + 2 * (c + 0.5)) / (2 * np.sqrt(2)), (w - z) / (2 * np.sqrt(2))
+        return (w + z + 2 * c) / (2 * np.sqrt(0.5)), (w - z) / (2 * np.sqrt(0.5))
 
 
 class QuadraticSquaredMinus1(Diffeomorphism):

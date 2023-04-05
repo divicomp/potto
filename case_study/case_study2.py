@@ -37,18 +37,26 @@ from case_study2_utils import potto, eval_expr, eval_grad_expr
 from potto.libs.diffeos import SumDiffeo
 
 
-def sec2_example(filename, n):
+def compute_pixel(ij, init_param_vals, e, params, de, dparams, n, viewport_width):
+    i, j = ij
+    init_param_vals[1] = viewport_width * i / n
+    init_param_vals[2] = viewport_width * j / n
+    imgij = eval_expr(e, init_param_vals, params)
+    dimgij = eval_grad_expr(de, init_param_vals, params, dparams)
+    return imgij, dimgij
+
+
+def sec2_example(filename, n, viewport_width=3.0, c_offset=1.41, do_parallel=True):
     np.random.seed(0)
 
     @potto()
     def renderer(c, shader, px, py):
         x, y = TegVar('x'), TegVar('y')
         cond = SumDiffeo((c,), (x, y))
-        offset = 3
-        # offset = 1
-        mx, my = BoundedLebesgue((px - (offset + 1)), (px - offset), x), BoundedLebesgue((py - (offset + 1)), (py - offset), y)
+        pix_size = viewport_width / n
+        mx, my = BoundedLebesgue(px, px + pix_size, x), BoundedLebesgue(py, py + pix_size, y)
         integrand = App(shader, (x, y, c)) * Heaviside(cond)
-        return Int(Int(integrand, mx), my)
+        return Int(Int(integrand, mx), my) / (pix_size * pix_size)
 
     @potto()
     def loss(c, image, shader):
@@ -64,11 +72,11 @@ def sec2_example(filename, n):
 
     @potto()
     def lin_shader(x: TegVar, y: TegVar, c):
-        return 1 / (np.sqrt(2) * (x + y) - c)
+        return 1 / (np.sqrt(0.5) * (x + y) - (c - 1))
 
     @potto()
     def quad_shader(x: TegVar, y: TegVar, c):
-        return 1 / ((np.sqrt(2) * (x + y) - c)) ** 2
+        return 1 / (np.sqrt(0.5) * (x + y) - (c - 1)) ** 2
 
     s1, ds1 = const_shader()
     s2, ds2 = lin_shader()
@@ -80,64 +88,54 @@ def sec2_example(filename, n):
     c, dc = Var('c'), Var('dc')
     params = [c, px, py]
     dparams = [dc, dpx, dpy]
-    # params = [c]
-    # dparams = [dc]
-    eps = 0.01
-    init_param_vals = np.array([0.2, 0, 0])
-    init_param_vals_eps = np.array([0.2 - eps, 0, 0])
-
-    # init_param_vals = np.array([-0.2])
+    init_param_vals = np.array([c_offset, 0, 0])
 
     imgs, dimgs, fdimgs = [], [], []
-    image = Const(0.5)
-    dimage = Const(0)
     for shader, dshader in [(s1, ds1), (s2, ds2), (s3, ds3)]:
-        # e = App(iexp, (c, image, shader))c
-        # de = App(diexp, (c, image, shader, dc, dimage, dshader))
         e = App(iexp, (c, shader, px, py))
         de = App(diexp, (c, shader, px, py, dc, dshader, dpx, dpy))
-
-        # res = spop.minimize(fun=eval_expr, jac=eval_grad_expr, x0=init_param_vals, method='BFGS', options={'disp': 1})
         nx = n
         ny = n
-        img = np.zeros((nx, ny))
-        dimg = np.zeros((nx, ny))
-        fdimg = np.zeros((nx, ny))
-        for i in reversed(range(nx)):
-            for j in (range(ny)):
-                init_param_vals[1] = i / 4
-                init_param_vals[2] = j / 4
-                init_param_vals_eps[1] = i / 4
-                init_param_vals_eps[2] = j / 4
-                # if i == 9 and j == 9:
-                #     pass
-                img[i, j] = eval_expr(e, init_param_vals, params)
-                fdimg[i, j] = (img[i, j] - eval_expr(e, init_param_vals_eps, params)) / eps
-                dimg[i, j] = eval_grad_expr(de, init_param_vals, params, dparams)
+
+        compute_pixelij = functools.partial(
+            compute_pixel,
+            init_param_vals=init_param_vals,
+            e=e,
+            params=params,
+            de=de,
+            dparams=dparams,
+            n=n,
+            viewport_width=viewport_width,
+        )
+
+        if do_parallel:
+            from multiprocessing import Pool
+            with Pool() as pool:
+                runs = pool.map(compute_pixelij, [(x, y) for x in range(nx) for y in range(ny)])
+            pixvals = np.array(runs)
+            img = pixvals[:, 0].reshape((nx, ny))
+            dimg = pixvals[:, 1].reshape((nx, ny))
+        else:
+            img = np.zeros((nx, ny))
+            dimg = np.zeros((nx, ny))
+            for i in range(nx):
+                for j in (range(ny)):
+                    pixval, dpixval = compute_pixelij((i, j))
+                    img[i, j] = pixval
+                    dimg[i, j] = dpixval
+
         imgs.append(img)
         dimgs.append(dimg)
-        fdimgs.append(fdimg)
 
     for i, img in enumerate(imgs):
         print(f'{i}\t{img}')
     for i, dimg in enumerate(dimgs):
         print(f'{i}\t{dimg}')
 
-    # u_test = np.linspace(0, 5)
-    # y_test = model(res.x, u_test)
-    # plt.plot(u, y, 'o', markersize=4, label='data')
-    # plt.plot(u_test, y_test, label='fitted model')
-    # plt.xlabel("u")
-    # plt.ylabel("y")
-    # plt.legend(loc='lower right')
-    # plt.show()
-
     with open(filename, 'wb') as f:
         pickle.dump(imgs, f)
     with open(f'd{filename}', 'wb') as f:
         pickle.dump(dimgs, f)
-    with open(f'fd{filename}', 'wb') as f:
-        pickle.dump(fdimgs, f)
 
 
 def plot(filename, cmap='gray', vmin=0, vmax=1):
@@ -146,12 +144,9 @@ def plot(filename, cmap='gray', vmin=0, vmax=1):
         imgs = pickle.load(f)
     print(imgs)
 
-
     f, ax = plt.subplots(1, 3)
     ps = []
-    # , "interpolation": "none"
-    n = 40
-    # kwargs = {"cmap": "Greys", "vmin": 0, "vmax": 1}
+    n = 100
     cmap = plt.get_cmap(cmap)
     kwargs = {"cmap": cmap, "vmin": vmin, "vmax": vmax}
     titles = ['Const Shader', 'Linear Shader', 'Quadratic Shader']
@@ -166,32 +161,13 @@ def plot(filename, cmap='gray', vmin=0, vmax=1):
     f.colorbar(ps[-1], cax=cax)
     plt.show()
 
-    # plt.figure(figsize=(8, 6), dpi=80)
-    # plt.title("Compile Time: Teg vs Potto")
-    # plt.xlabel("Number of Shader Swaps")
-    # plt.ylabel("Time(s)")
-    # plt.plot(num_shader_swaps, teg_compile_times, label="Teg compile time")
-    # plt.plot(num_shader_swaps, potto_compile_times, label="Potto compile time")
-    # plt.legend(loc="upper right")
-    # plt.show()
-    #
-    # plt.figure(figsize=(8, 6), dpi=80)
-    # plt.title("Evaluation Time: Teg vs Potto")
-    # plt.xlabel("Number of Shader Swaps")
-    # plt.ylabel("Time(s)")
-    # plt.plot(num_shader_swaps, teg_eval_times, label="Teg eval time")
-    # plt.plot(num_shader_swaps, potto_eval_times, label="Potto eval time")
-    # plt.legend(loc="upper right")
-    # plt.show()
-
 
 if __name__ == "__main__":
-    n = 40
-    # filename = f"imgs_shift{n}x{n}diffeo10res.pkl"
-    # sec2_example(filename, n)
-    filename = f"imgs_shift{n}x{n}10res.pkl"
-    plot(filename)
-    filename = f"fdimgs_shift{n}x{n}10res.pkl"
-    plot(filename)
-    filename = f"dimgs_shift{n}x{n}10res.pkl"
-    plot(filename, cmap='cmr.seasons_s', vmin=-1, vmax=1)
+    n = 100
+    filename = f"imgs_shift{n}x{n}3width1000res.pkl"
+    sec2_example(filename, n)
+    filename = f"imgs_shift{n}x{n}3width1000res.pkl"
+    plot(filename, cmap='cmr.eclipse', vmin=0, vmax=1)
+    filename = f"dimgs_shift{n}x{n}3width1000res.pkl"
+    # plot(filename, cmap=cmr.get_sub_cmap('cmr.seasons_s', 0.05, 0.95), vmin=-1, vmax=1)
+    plot(filename, cmap='cmr.seaweed', vmin=-1, vmax=1)
