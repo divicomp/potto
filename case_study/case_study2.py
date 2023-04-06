@@ -138,7 +138,7 @@ def sec2_example(filename, n, viewport_width=3.0, c_offset=1.41, do_parallel=Tru
         pickle.dump(dimgs, f)
 
 
-def plot(filename, cmap='gray', vmin=0, vmax=1):
+def plot(filename, cmap='gray', vmin=0, vmax=1, savefig=False):
     # with open(f'd{filename}', 'rb') as f:
     with open(filename, 'rb') as f:
         imgs = pickle.load(f)
@@ -146,7 +146,7 @@ def plot(filename, cmap='gray', vmin=0, vmax=1):
 
     f, ax = plt.subplots(1, 3)
     ps = []
-    n = 100
+    n = 200
     cmap = plt.get_cmap(cmap)
     kwargs = {"cmap": cmap, "vmin": vmin, "vmax": vmax}
     titles = ['Const Shader', 'Linear Shader', 'Quadratic Shader']
@@ -159,15 +159,18 @@ def plot(filename, cmap='gray', vmin=0, vmax=1):
         # ax[i]._colorbars()
     cax = f.add_axes([ax[-1].get_position().x1 + 0.01, ax[-1].get_position().y0, 0.02, ax[-1].get_position().height])
     f.colorbar(ps[-1], cax=cax)
+    plt.rcParams['path.simplify_threshold'] = 1.0
+    if savefig:
+        plt.savefig('../out/' + filename[:-4] + '600ppi.png', format='png', dpi=600)
     plt.show()
 
 
 if __name__ == "__main__":
     n = 100
-    filename = f"imgs_shift{n}x{n}3width1000res.pkl"
+    filename = f"imgs_shift{n}x{n}3width100res.pkl"
     sec2_example(filename, n)
-    filename = f"imgs_shift{n}x{n}3width1000res.pkl"
+    filename = f"imgs_shift{n}x{n}3width100res.pkl"
     plot(filename, cmap='cmr.eclipse', vmin=0, vmax=1)
-    filename = f"dimgs_shift{n}x{n}3width1000res.pkl"
+    filename = f"dimgs_shift{n}x{n}3width100res.pkl"
     # plot(filename, cmap=cmr.get_sub_cmap('cmr.seasons_s', 0.05, 0.95), vmin=-1, vmax=1)
-    plot(filename, cmap='cmr.seaweed', vmin=-1, vmax=1)
+    plot(filename, cmap='cmr.wildfire_r', vmin=-1.5, vmax=1.5)

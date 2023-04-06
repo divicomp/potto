@@ -47,8 +47,8 @@ class Affine(Diffeomorphism):
 
 class SumDiffeo(Affine):
     """
-    f(x, y) = √2 (x + y) - (c + 1), √2 (x - y) - (c + 1)
-    f-1(w, z) = (w + z + 2c) / 2√2, (w - z) / 2√2
+    f(x, y) = √2/2 (x + y) - c, √2/2 (x - y) - c
+    f-1(w, z) = (w + z + 2c) / √2, (w - z) / √2
     """
 
     def __str__(self):
