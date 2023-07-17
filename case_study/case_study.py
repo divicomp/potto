@@ -110,6 +110,7 @@ def sec2_example(filename, n, viewport_width=3.0, c_offset=1.41, do_parallel=Tru
 
         if do_parallel:
             from multiprocessing import Pool
+
             with Pool() as pool:
                 runs = pool.map(compute_pixelij, [(x, y) for x in range(nx) for y in range(ny)])
             pixvals = np.array(runs)
@@ -119,7 +120,7 @@ def sec2_example(filename, n, viewport_width=3.0, c_offset=1.41, do_parallel=Tru
             img = np.zeros((nx, ny))
             dimg = np.zeros((nx, ny))
             for i in range(nx):
-                for j in (range(ny)):
+                for j in range(ny):
                     pixval, dpixval = compute_pixelij((i, j))
                     img[i, j] = pixval
                     dimg[i, j] = dpixval

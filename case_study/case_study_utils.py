@@ -29,7 +29,47 @@ from potto import deriv
 from potto import evaluate, evaluate_all
 from potto import VarVal
 from potto import simplify
+from time import time
 
+# trial 1
+# empirical_risk_minimization deriv: 0.0004360675811767578
+# normal_pdf_sigma5 deriv: 0.00012087821960449219
+# trunc_normal deriv: 0.0003268718719482422
+# trial 2
+# empirical_risk_minimization deriv: 0.00032806396484375
+# normal_pdf_sigma5 deriv: 9.202957153320312e-05
+# trunc_normal deriv: 0.00023293495178222656
+# trial 3
+# empirical_risk_minimization deriv: 0.0003657341003417969
+# normal_pdf_sigma5 deriv: 0.000102996826171875
+# trunc_normal deriv: 0.00023293495178222656
+# on average: 746 microseconds
+# vs. double counting empirical 1122 microseconds
+# potto_comp_times = [0.0004360675811767578 + 0.00012087821960449219 + 0.0003268718719482422, 0.00032806396484375 + 9.202957153320312e-05 + 0.00023293495178222656, 0.00023293495178222656 + 0.000102996826171875 + 0.00023293495178222656]
+
+# time to evaluate the derivative
+# each partial
+# runtime: 0.42827701568603516
+# runtime: 0.44319891929626465
+# runtime: 0.527947187423706
+# total: 1.3994231224060059
+# each partial
+# runtime: 0.4598698616027832
+# runtime: 0.4458780288696289
+# runtime: 0.4395768642425537
+# total: 1.3453247547149658
+# each partial
+# runtime: 0.43221187591552734
+# runtime: 0.42958593368530273
+# runtime: 0.4425499439239502
+# total: 1.3043477535247803
+# on average: 1.349698543548584
+# potto = [1.3994231224060059, 1.3453247547149658, 1.349698543548584]
+# ~ 1.35 seconds
+
+empirical_risk_minimization = np.mean([0.0004360675811767578, 0.00032806396484375, 0.0003657341003417969])
+normal_pdf_sigma5 = np.mean([0.00012087821960449219, 9.202957153320312e-05, 0.000102996826171875])
+trunc_normal = np.mean([0.0003268718719482422, 0.00023293495178222656, 0.00023293495178222656])
 
 def potto():
     def potto_decorator(f: Callable[[Var | TegVar, ...], GExpr]):
@@ -45,7 +85,10 @@ def potto():
             e = simplify(e)
 
             ctx = {a.name: da_name for a, da_name in zip(args, darg_names)}
+            start = time()
             de = deriv(e, ctx)
+            end = time()
+            print(f'{f.__name__} deriv: {end - start}')
             de = simplify(de)
             return e, de
 
@@ -61,7 +104,7 @@ def list_to_param(params, vals):
 def eval_expr(e, ps, params):
     param_vals = list_to_param(params, ps)
     ret = evaluate_all(e, VarVal(param_vals), num_samples=50)
-    print(f'eval: {ps}\n\t: {ret}')
+    # print(f'eval: {ps}\n\t: {ret}')
     return ret
 
 
@@ -71,7 +114,11 @@ def eval_grad_expr(de, ps, params, dparams):
         differential = {dp.name: 0 for dp in dparams}
         differential[dparam.name] = 1
         dparam_vals = list_to_param(params, ps) | differential
+        start = time()
         dc_eval = evaluate_all(de, VarVal(dparam_vals), num_samples=50)
+        end = time()
+        print('runtime', end - start)
+
         grad.append(dc_eval)
-    print(f'grad: {ps}\n\t: {grad}')
+    # print(f'grad: {ps}\n\t: {grad}')
     return grad[0]

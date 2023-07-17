@@ -52,9 +52,7 @@ def generate(expr, env, num_samples, gen_samples):
     """A single sample for every variable of integration in expr."""
 
     def gen(expr: IREnv, env: Environment, gen_samples: TraceEnv) -> Gen:
-
         match expr:
-
             case Const() | Var() | TegVar():
                 return Gen()
 
@@ -73,7 +71,7 @@ def generate(expr, env, num_samples, gen_samples):
                 # Evaluate returns Potto functions for functions
                 nonflat_arg_vals = (evaluate(a, env, num_samples, gen_samples) for a in args)
                 arg_vals = flatten_args(nonflat_arg_vals)
-                assert len(function.arg_names) == len(arg_vals)
+                assert len(function.arg_names) == len(arg_vals), f"{function.arg_names} {arg_vals} {function_}"
 
                 arg_samps_pushdown, tvar_arg_name = sample_arg_substitution(function, args, arg_vals, gen_samples)
 
@@ -227,7 +225,7 @@ def naive_evaluate(expr: GExpr | IREnv, env: Environment):
 
 
 def eval_integrand_once(
-        i, expr, env, gen_samples, num_samples, integrand, new_env, new_gen, measure_lower, measure_upper, x
+    i, expr, env, gen_samples, num_samples, integrand, new_env, new_gen, measure_lower, measure_upper, x
 ):
     trace_to_sample = {}
     all_samples = Gen()
@@ -254,10 +252,10 @@ def eval_integrand_once(
 
 
 def evaluate(
-        expr: IREnv | GExpr,
-        env_or_var_val: Environment | VarVal | None = None,
-        num_samples: int = 50,
-        gen_samples: TraceEnv | None = None,
+    expr: IREnv | GExpr,
+    env_or_var_val: Environment | VarVal | None = None,
+    num_samples: int = 50,
+    gen_samples: TraceEnv | None = None,
 ) -> float:
     expr = to_irenv(expr)
     env = to_env(env_or_var_val)
@@ -269,7 +267,6 @@ def evaluate(
     trace_name = None if not expr_trace else expr_trace.name
 
     match expr:
-
         case Const(c):
             return c
 
@@ -306,7 +303,6 @@ def evaluate(
             )
 
         case Div(left, right):
-
             left_gen_samples, right_gen_samples = gen_samples, gen_samples
             match trace_name:
                 case TraceName.BinopLeft:
@@ -433,7 +429,7 @@ def evaluate(
 
 
 def evaluate_all(
-        expr: IREnv | GExpr, env_or_var_val: Environment | VarVal | None = None, num_samples: int = 50
+    expr: IREnv | GExpr, env_or_var_val: Environment | VarVal | None = None, num_samples: int = 50
 ) -> float:
     expr = to_irenv(expr)
     env = to_env(env_or_var_val)
@@ -473,9 +469,9 @@ def reweight_samples_with_diffeo(body_gen, val_body_gen, function, args, tvar_ar
                     for i, (otv, tv, arg) in enumerate(zip(out_tvars, tvars, function.arg_names)):
                         sym = arg.name
                         if (
-                                sym not in ds_trace
-                                and isinstance(arg, TegVar)
-                                and (arg_ind < function.infinitesimal_ind or function.infinitesimal_ind < 0)
+                            sym not in ds_trace
+                            and isinstance(arg, TegVar)
+                            and (arg_ind < function.infinitesimal_ind or function.infinitesimal_ind < 0)
                         ):
                             lb, ub = env.get_bounds(otv.name)
 
