@@ -18,4 +18,8 @@ The `potto` folder contains the core implementation. We break the implementation
 - `lang` contains the core language implementation such as the grammar, evaluator, and derivative code.
 - `libs` contains useful libraries for diffeomorphisms, measures, and math operators.
 
+## Figures
+
+Figure 2 is at `case_study/plot_normal.py`.
+
 ## TODO: Citation
