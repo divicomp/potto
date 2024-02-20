@@ -21,5 +21,5 @@ The `potto` folder contains the core implementation. We break the implementation
 ## Figures
 
 Figure 2 is at `case_study/plot_normal.py`.
-
+Figure 3 is at `case_study/figure3.py`.
 ## TODO: Citation

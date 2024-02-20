@@ -183,7 +183,7 @@ def normal_vs_trunc_normal_with_points():
     # ax.text(-5, 0.19, r"Potto samples", fontsize=12, color=potto_color)
     # ax.text(-5, 0.01, r"Standard AD/Potto samples", fontsize=12, color=color)
 
-    for pt, deriv_label, xshift, yshift in zip([-1, 4], [r"$-D_a \ell$", r"$-D_b \ell$"], [-1.9, 0.2], [0.01, 0.01]):
+    for pt, deriv_label, xshift, yshift in zip([-1, 4], [r"$-D_a R$", r"$-D_b R$"], [-2.1, 0.2], [0.01, 0.01]):
         ht = truncnorm.pdf(pt, -2 / 5, 3 / 5, loc=1, scale=5)
         star = ax.scatter(pt, ht, color=potto_color, marker="*", s=180)
         ax.arrow(
@@ -209,9 +209,7 @@ def normal_vs_trunc_normal_with_points():
         head_length=0.4,
     )
 
-    ax.text(
-        1 - 0.3, truncnorm.pdf(1, -2 / 5, 3 / 5, loc=1, scale=5) + 0.023, r"$-D_{\mu} \ell$", fontsize=16, color=color
-    )
+    ax.text(1 - 0.3, truncnorm.pdf(1, -2 / 5, 3 / 5, loc=1, scale=5) + 0.023, r"$-D_{\mu} R$", fontsize=16, color=color)
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
