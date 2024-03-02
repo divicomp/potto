@@ -57,7 +57,7 @@ def eval_grad_expr(de, ps, params, dparams, param_discont=True):
         start = time.time()
         dc_eval = evaluate_all(de, var_vals, num_samples=250)
         end = time.time()
-        print(f'runtime sequential: {end - start}')
+        print(f"runtime sequential: {end - start}")
         #
         # with Pool() as pool:
         #     f = lambda _: evaluate_all(de, var_vals, 5)
@@ -106,7 +106,7 @@ def sec2_example(filename, n, param_discont=True):
 
     @potto()
     def empirical_risk_minimization(distro, p1, p2, p3):
-        x = TegVar('x')
+        x = TegVar("x")
         mx = BoundedLebesgue(-10, 10, x)
         ground_truth = normal_pdf(x, 2, 5)
         integrand = (App(distro, (x, p1, p2, p3)) - ground_truth) ** 2
@@ -140,9 +140,9 @@ def sec2_example(filename, n, param_discont=True):
     s2, ds2 = trunc_normal()
 
     # main.py
-    p1, dp1 = Var('p1'), Var('dp1')
-    p2, dp2 = Var('p2'), Var('dp2')
-    p3, dp3 = Var('p3'), Var('dp3')
+    p1, dp1 = Var("p1"), Var("dp1")
+    p2, dp2 = Var("p2"), Var("dp2")
+    p3, dp3 = Var("p3"), Var("dp3")
     params = [p1, p2, p3]
     dparams = [dp1, dp2, dp3]
     trunc_args = (s2, ds2, np.array([1, -1, 4], dtype=np.float64))  # mu, a, b
@@ -158,7 +158,7 @@ def sec2_example(filename, n, param_discont=True):
         for _ in range(100):
             param_vals -= eta * eval_grad_expr(dloss, param_vals, params, dparams, param_discont)
             losses.append(eval_expr(loss, param_vals, params))
-            print(f'mu {param_vals[0]}, a {param_vals[1]}, b {param_vals[2]}, loss {losses[-1]}')
+            print(f"mu {param_vals[0]}, a {param_vals[1]}, b {param_vals[2]}, loss {losses[-1]}")
             p1s.append(param_vals[0])
             p2s.append(param_vals[1])
             p3s.append(param_vals[2])
@@ -181,16 +181,17 @@ def graph_single_run(all_p1s, all_p2s, all_p3s, all_losses):
         axes[3].plot(iters, l, linewidth=4)
         break
 
-    axes[0].set_xlabel("Iteration", fontsize=12)
-    axes[0].set_ylabel("Lower truncation threshold $a$", fontsize=12)
-    axes[1].set_xlabel("Iteration", fontsize=12)
-    axes[1].set_ylabel("Upper truncation threshold $b$", fontsize=12)
-    axes[2].set_xlabel("Iteration", fontsize=12)
-    axes[2].set_ylabel("Mean $\mu$", fontsize=12)
+    fs = 16
+    axes[0].set_xlabel("Iteration", fontsize=fs)
+    axes[0].set_ylabel("Lower truncation threshold $a$", fontsize=fs)
+    axes[1].set_xlabel("Iteration", fontsize=fs)
+    axes[1].set_ylabel("Upper truncation threshold $b$", fontsize=fs)
+    axes[2].set_xlabel("Iteration", fontsize=fs)
+    axes[2].set_ylabel("Mean $\mu$", fontsize=fs)
 
     # axes[3].set_yscale("log")
-    axes[3].set_xlabel("Iteration", fontsize=12)
-    axes[3].set_ylabel("Log loss", fontsize=12)
+    axes[3].set_xlabel("Iteration", fontsize=fs)
+    axes[3].set_ylabel("Log loss", fontsize=fs)
 
     for i in range(4):
         axes[i].set_aspect("auto")
@@ -202,11 +203,11 @@ def graph_single_run(all_p1s, all_p2s, all_p3s, all_losses):
     # plt.savefig("GraphOut.png", format="png", dpi=200)
 
 
-def graph_runs(all_p1s, all_p2s, all_p3s, all_losses, all_p1s_gauss, all_losses_gauss):
+def graph_runs(all_p1s, all_p2s, all_p3s, all_losses, all_p1s_gauss, all_losses_gauss, save=True, path=None):
     fig, axes = plt.subplots(nrows=1, ncols=4, figsize=(14, 4))
 
     colors = ["#FE6100", "#EA8FEA", "#6E78FF"]
-    labels = ["Potto Truncated normal", "Normal", "Standard AD Truncated normal"]
+    labels = ["Potto Truncated Normal", "Normal", "Standard AD Truncated Normal"]
     for i, (mu, a, b, l) in enumerate(zip(all_p1s, all_p2s, all_p3s, all_losses)):
         iters = list(range(len(l)))
         if i == 0:
@@ -225,26 +226,37 @@ def graph_runs(all_p1s, all_p2s, all_p3s, all_losses, all_p1s_gauss, all_losses_
         break
 
     # cut off y-axis add note.
-    axes[0].set_xlabel("Iteration", fontsize=12)
-    axes[0].set_ylabel("Lower truncation threshold $a$", fontsize=12)
-    axes[1].set_xlabel("Iteration", fontsize=12)
-    axes[1].set_ylabel("Upper truncation threshold $b$", fontsize=12)
-    axes[2].set_xlabel("Iteration", fontsize=12)
-    axes[2].set_ylabel("Mean $\mu$", fontsize=12)
+    fs = 16
+    axes[0].set_xlabel("Iteration", fontsize=fs)
+    axes[0].set_ylabel("Lower Truncation Point $a$", fontsize=fs)
+    axes[1].set_xlabel("Iteration", fontsize=fs)
+    axes[1].set_ylabel("Upper Truncation Point $b$", fontsize=fs)
+    axes[2].set_xlabel("Iteration", fontsize=fs)
+    axes[2].set_ylabel("Mean $\mu$", fontsize=fs)
     axes[3].set_yscale("log")
-    axes[3].set_xlabel("Iteration", fontsize=12)
-    axes[3].set_ylabel("Log loss", fontsize=12)
+    axes[3].set_xlabel("Iteration", fontsize=fs)
+    axes[3].set_ylabel("Log Loss", fontsize=fs)
+
     axes[3].set_ylim([1e-5, 5e-2])
 
     # fig.subplots_adjust(left=0.08, right=0.92, bottom=0.44, top=0.9, wspace=0.3)
 
-    # Move the legend below the figure and center it
-    fig.legend(loc='lower center', ncol=3, bbox_to_anchor=(0.5, 0), fontsize=12)
-
+    fig.legend(loc="lower center", ncol=3, bbox_to_anchor=(0.5, 0), fontsize=fs)
     plt.tight_layout()
-    plt.subplots_adjust(bottom=0.25)
 
-    plt.show()
+    # Adjust layout to make space for the legend
+    plt.subplots_adjust(bottom=0.3, top=0.9)
+
+    # # Move the legend below the figure and center it
+    # fig.legend(loc="lower center", ncol=3, bbox_to_anchor=(0.5, 0), fontsize=fs)
+
+    # plt.subplots_adjust(bottom=0.3, top=0.9)
+
+    if save:
+        plt.savefig(path + "trunc_gauss_with_legend.svg")
+        plt.clf()
+    else:
+        plt.show()
 
 
 if __name__ == "__main__":
@@ -256,9 +268,11 @@ if __name__ == "__main__":
     # results = sec2_example(filename1, n)
     # pickle.dump(results, open(filename1, 'wb'))
 
-    all_p1s, all_p2s, all_p3s, all_losses = pickle.load(open(filename1, 'rb'))
-    all_p1s_gauss, _, _, all_losses_gauss = pickle.load(open(filename2, 'rb'))
-    graph_runs(all_p1s, all_p2s, all_p3s, all_losses, all_p1s_gauss, all_losses_gauss)
+    path = "/Users/jessemichel/research/potto_project/potto_paper/images/"
+
+    all_p1s, all_p2s, all_p3s, all_losses = pickle.load(open(filename1, "rb"))
+    all_p1s_gauss, _, _, all_losses_gauss = pickle.load(open(filename2, "rb"))
+    graph_runs(all_p1s, all_p2s, all_p3s, all_losses, all_p1s_gauss, all_losses_gauss, save=True, path=path)
 
     # filename = f"imgs_shift{n}x{n}3width100res.pkl"
     # plot(filename, cmap='cmr.eclipse', vmin=0, vmax=1)
