@@ -1,3 +1,5 @@
+# Adapted from https://en.m.wikipedia.org/wiki/File:Diffeomorphism_of_a_square.svg
+
 import numpy as np
 import matplotlib.pyplot as plt
 
