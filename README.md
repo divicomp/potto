@@ -42,6 +42,7 @@ The `potto` folder contains the core implementation. We break the implementation
 - `ir` contains the code for an IR lowering that we do to abstract diffeomorphisms outside of Dirac deltas and conditionals, as well as add more information to diffeomorphisms to make evaluation easier.
 - `lang` contains the core language implementation such as the grammar, evaluator, and derivative code.
 - `libs` contains useful libraries for diffeomorphisms, measures, and math operators.
+- `tests` contains the tests for Potto.
 
 
 ## Figures
