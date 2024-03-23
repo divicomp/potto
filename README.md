@@ -14,7 +14,7 @@ We present the example depicted in Figure 1 of the paper:
 
 ![D_t \int_{0}^1 [x \leq t]dx](https://latex.codecogs.com/svg.latex?D_t%20\int_{x%20=%200}^1%20[x%20\leq%20t]dx),
 
-which is the the derivative of the integral of a jump discontinuity that is `1` if `x <= t` and `0` otherwise.
+which is the derivative of the integral of a jump discontinuity that is `1` if `x <= t` and `0` otherwise.
 
 At `t=0.5`, the the result is `1`. However, discretizing before computing the derivative as is standard in differentiable programming languages (e.g., PyTorch and TensorFlow) results in a derivative of 0. 
 
