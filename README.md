@@ -43,8 +43,15 @@ The `potto` folder contains the core implementation. We break the implementation
 - `lang` contains the core language implementation such as the grammar, evaluator, and derivative code.
 - `libs` contains useful libraries for diffeomorphisms, measures, and math operators.
 
-## Figures
 
-Figure 2 is at `case_study/plot_normal.py`.
-Figure 3 is at `case_study/figure3.py`.
-## TODO: Citation
+## Figures
+You can reproduce Figures 2 and 3 by running `case_study/plot_normal.py` and `case_study/figure3.py`.
+
+
+## Citation
+@article{Michel2024Potto,
+    title     = {Distributions for Compositionally Differentiating Parametric Discontinuities},
+    author    = {Michel, Jesse and Mu, Kevin and Yang, Xuanda and Bangaru, Sai and Collins, Elias Rojas and Bernstein, Gilbert and Ragan-Kelley, Jonathan and Carbin, Michael and Li, Tzu-Mao},
+    booktitle = {Object-Oriented Programming, Systems, Languages & Applications},
+    year      = {2024}
+}
