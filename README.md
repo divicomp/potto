@@ -21,7 +21,7 @@ At `t=0.5`, the correct answer is `1`. However, discretizing before computing th
 In Potto, we can implement this example with:
 ```python
 from potto import Const, Var, TegVar, IfElse, FlipShift, Int, BoundedLebesgue
-from potto import deriv, evaluate_all, VarVal
+from potto import deriv, evaluate, VarVal
 
 # Declare the variable of integration, variable, and infinitesimal
 x, t, dt = TegVar("x"), Var("t"), Var("dt")
@@ -33,7 +33,7 @@ expr = deriv(Int(integrand, mu), {t.name: dt.name})
 
 # Evaluate the derivative of the integral at t = 0.5, dt = 1
 ctx = VarVal({t.name: 0.5, dt.name: 1})
-print("Dₜ∫₀¹ [x ≤ t] dx at t=0.5 is", evaluate_all(expr, ctx))
+print("Dₜ∫₀¹ [x ≤ t] dx at t=0.5 is", evaluate(expr, ctx))
 ```
 
 
