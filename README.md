@@ -20,18 +20,8 @@ At `t=0.5`, the correct answer is `1`. However, discretizing before computing th
 
 In Potto, we can implement this example with:
 ```python
-from potto import (
-    Const,
-    Var,
-    TegVar,
-    IfElse,
-    FlipShift,
-    Int,
-    deriv,
-    evaluate_all,
-    BoundedLebesgue,
-    VarVal,
-)
+from potto import Const, Var, TegVar, IfElse, FlipShift, Int, BoundedLebesgue
+from potto import deriv, evaluate_all, VarVal
 
 # Declare the variable of integration, variable, and infinitesimal
 x, t, dt = TegVar("x"), Var("t"), Var("dt")
