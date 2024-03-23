@@ -12,7 +12,7 @@ pip install -e .
 ## Illustrative Example
 We present the example depicted in Figure 1 of the paper:
 
-![D_t \int_{x = 0}^1 [x \leq t]](https://latex.codecogs.com/svg.latex?D_t%20\int_{x%20=%200}^1%20[x%20\leq%20t]),
+![D_t \int_{0}^1 [x \leq t]dx](https://latex.codecogs.com/svg.latex?D_t%20\int_{x%20=%200}^1%20[x%20\leq%20t]dx),
 
 which is the the derivative of the integral of a jump discontinuity that is `1` if `x <= t` and `0` otherwise.
 
