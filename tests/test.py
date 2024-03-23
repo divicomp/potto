@@ -3,8 +3,17 @@ from unittest import TestCase
 import numpy as np
 import random
 
-from potto import Shift, FlipShift, SquareSlice, QuarterCircle, Simplex3D, OffAxisSquareSlice, ShiftRight, ScaleByT, \
-    Scale2ShiftT
+from potto import (
+    Shift,
+    FlipShift,
+    SquareSlice,
+    QuarterCircle,
+    Simplex3D,
+    OffAxisSquareSlice,
+    ShiftRight,
+    ScaleByT,
+    Scale2ShiftT,
+)
 from potto import (
     Delta,
     Diffeomorphism,
@@ -77,10 +86,10 @@ class TestSimple(TestCase):
         #                                name=Sym(, 5))), name=Sym(,
         #          6))))))
 
-        print(repr(a))
+        # print(repr(a))
         deriv_out = deriv(a, {z.name: dz.name})
 
-        print(repr(deriv_out))
+        # print(repr(deriv_out))
         # \f. \g. f(g(z))
         # \f, df. \g, dg. (df(g(z), dg(z,0)))
         # Function((f, df),
@@ -194,7 +203,7 @@ class TestEliminateEquivalences(TestCase):
         var_val = VarVal({self.k.name: -1, self.l.name: 1.5})
         self.assertEqual(evaluate(e, env_or_var_val=var_val), 1)
 
-    @unittest.skip('Need to update malformed input checks')
+    @unittest.skip("Need to update malformed input checks")
     def test_delta_product_should_fail(self):
         delta = Delta(self.shiftk)
         with self.assertRaises(ValueError):
@@ -317,7 +326,7 @@ class TestIntegral(TestCase):
         mu = BoundedLebesgue(Const(0), Const(1), x)
         nu = BoundedLebesgue(Const(-1), Const(0), x)
         # int_0^1 x^2 dx + int_-1^0 x dx = 1 / 3 - 1 / 2 = -1 / 6
-        expr = Int(x ** 2, mu) + Int(x, nu)
+        expr = Int(x**2, mu) + Int(x, nu)
         self.assertAlmostEqual(
             evaluate(expr, num_samples=1000),
             -1 / 6,
@@ -338,14 +347,14 @@ class TestIntegral(TestCase):
         x = self.tvx
         mu = BoundedLebesgue(Const(0), Const(1), x)
         # (1/3) / (1/2) = 2/3
-        expr = Int(x ** 2, mu) / Int(x, mu)
+        expr = Int(x**2, mu) / Int(x, mu)
         self.assertAlmostEqual(
             evaluate(expr, num_samples=2000),
             2 / 3,
             places=1,
         )
 
-    @unittest.skip('Implement capture avoiding substitution')
+    @unittest.skip("Implement capture avoiding substitution")
     def test_integral_dx_dx(self):
         # TODO: Implement abstraction so that integrals don't capture variables
         x = self.tvx
@@ -395,7 +404,7 @@ class TestSquare(TestCase):
 
     def test_sliced_square2(self):
         e = Int(Int(Heaviside(self.slice), self.mu), self.nu)
-        dk = TegVar('dk')
+        dk = TegVar("dk")
         deriv_ctx = {self.k.name: dk.name}
         dintegral = deriv(e, deriv_ctx)
         var_val = VarVal({self.k.name: 0.5, dk.name: 1})
@@ -421,7 +430,7 @@ class TestQuarterCircle(TestCase):
     def test_mock(self):
         # \int_y 0.5(1 - y^2)^-0.5 dy
         var_val = VarVal({self.r.name: 1})
-        expr = Int(Const(1 / 2) / Sqrt(self.r - self.tvy ** 2), self.nu)
+        expr = Int(Const(1 / 2) / Sqrt(self.r - self.tvy**2), self.nu)
         integ = evaluate(expr, env_or_var_val=var_val, num_samples=100)
         self.assertAlmostEqual(integ, 0.4636, places=1)
 
@@ -430,7 +439,7 @@ class TestQuarterCircle(TestCase):
         heaviside = Heaviside(self.quarter_circle)
         nu = BoundedLebesgue(0, 1, self.tvy)
         e = Int(Int(heaviside, self.mu), nu)
-        drsym = Sym('dr')
+        drsym = Sym("dr")
         deriv_ctx = {self.r.name: drsym}
         dintegral = deriv(e, deriv_ctx)
         var_val = VarVal({self.r.name: 1, drsym: 1})
@@ -577,9 +586,17 @@ class TestAbstraction(TestCase):
         var_val = VarVal({a.name: -0.5, dasym: 0})
         samples = generate(to_irenv(dintegral), to_env(var_val), 1, TraceEnv())
         traces = extract_traces_from_name(samples, x.name, with_arg_nums=True)
-        expected_trace_names = (TraceName.BinopLeft, TraceName.BinopLeft, TraceName.Integral, TraceName.AppArg,
-                                TraceName.BinopRight, TraceName.BinopLeft, TraceName.BinopLeft, TraceName.AppFun,
-                                TraceName.Leaf)
+        expected_trace_names = (
+            TraceName.BinopLeft,
+            TraceName.BinopLeft,
+            TraceName.Integral,
+            TraceName.AppArg,
+            TraceName.BinopRight,
+            TraceName.BinopLeft,
+            TraceName.BinopLeft,
+            TraceName.AppFun,
+            TraceName.Leaf,
+        )
         expected_arg_nums = (None, None, None, 2, None, None, None, None, None)
         self.assertEqual(traces, {tuple(zip(expected_trace_names, expected_arg_nums))})
         val = evaluate_all(dintegral, var_val)
@@ -698,7 +715,7 @@ class TestAbstraction(TestCase):
 
         var_val = VarVal({n.name: 6, t.name: 0.7})
         val = evaluate_all(expr, env_or_var_val=var_val, num_samples=1000)
-        self.assertAlmostEqual(7 * 6 // 2 + 0.5 * (0.75 ** 2), val, places=1)
+        self.assertAlmostEqual(7 * 6 // 2 + 0.5 * (0.75**2), val, places=1)
 
         dt = TegVar("dt")
         dn = TegVar("dn")
@@ -757,7 +774,7 @@ class TestAbstraction(TestCase):
         dval = evaluate_all(dexpr, env_or_var_val=var_val, num_samples=50)
         self.assertAlmostEqual(2.4, dval, places=2)
 
-    @unittest.skip('Need to update test case with new fix api')
+    @unittest.skip("Need to update test case with new fix api")
     def test_do_n_times(self):
         #
         # sum $ for i in range(10) seq:
@@ -844,7 +861,7 @@ class TestAbstraction(TestCase):
         var_val = VarVal({n0.name: 3, default: 0})
 
         val = evaluate_all(expr, env_or_var_val=var_val)
-        print(val)
+        # print(val)
 
         assert False
 
@@ -948,7 +965,7 @@ class TestDiffeomorphicIfElse(TestCase):
         y = TegVar("y")
 
         nu = BoundedLebesgue(0, 1, x)
-        z = TegVar('z')
+        z = TegVar("z")
         dk = Var("dk")
         dl = Var("dl")
         dm = Var("dm")
@@ -1017,7 +1034,7 @@ class TestSanity(TestCase):
         beta = 2 * x + 2 * y
 
         # int int 4 * x * y * l + 6 * x + 6 * y * k dx dy
-        a, b = Var('a'), Var('b')
+        a, b = Var("a"), Var("b")
         shader = Function((a, b), (2 * a * l + 3 * b * k) / 10)
         integrand = App(shader, (alpha, beta))
 
@@ -1048,9 +1065,9 @@ def half_space(x, y, a, b, c):
 
 class TestVaryingInteriorDelta(TestCase):
     def setUp(self):
-        self.x, self.y = TegVar('x'), TegVar('y')
-        self.a, self.b, self.c = Var('a'), Var('b'), Var('c')
-        self.da, self.db, self.dc = Var('da'), Var('db'), Var('dc')
+        self.x, self.y = TegVar("x"), TegVar("y")
+        self.a, self.b, self.c = Var("a"), Var("b"), Var("c")
+        self.da, self.db, self.dc = Var("da"), Var("db"), Var("dc")
         self.h = half_space(self.x, self.y, self.a, self.b, self.c)
 
     def test_const_interior(self):
@@ -1127,7 +1144,7 @@ class TestGuardedDiffeomorphism(TestCase):
         def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
             return ((tvars[0] + vars[0]) ** 2,)
 
-    @unittest.skip('Need to catch divide by zero errors in square rots')
+    @unittest.skip("Need to catch divide by zero errors in square rots")
     def test_guarded_sqrt(self):
         rad = Var("r")
         x = TegVar("x")
@@ -1205,7 +1222,7 @@ class TestTracedGenerate(TestCase):
         traces = extract_traces_from_name(gen, x.name)
         expected_traces = {
             (TraceName.Integral, TraceName.BinopLeft, TraceName.AppFun, TraceName.Leaf),
-            (TraceName.Integral, TraceName.BinopRight, TraceName.AppFun, TraceName.Leaf)
+            (TraceName.Integral, TraceName.BinopRight, TraceName.AppFun, TraceName.Leaf),
         }
         self.assertEqual(traces, expected_traces)
         val = evaluate(expr, var_val, 1)
@@ -1223,7 +1240,7 @@ class TestTracedGenerate(TestCase):
         traces = extract_traces_from_name(gen, x.name)
         expected_traces = {
             (TraceName.Integral, TraceName.ElseBody, TraceName.BinopRight, TraceName.AppFun, TraceName.Leaf),
-            (TraceName.Integral, TraceName.IfBody, TraceName.AppFun, TraceName.Leaf)
+            (TraceName.Integral, TraceName.IfBody, TraceName.AppFun, TraceName.Leaf),
         }
         self.assertEqual(traces, expected_traces)
         val = evaluate(expr, vv, 1)
@@ -1271,18 +1288,66 @@ class TestTracedGenerate(TestCase):
         gen = self.gen(dexpr, var_val)
         traces = extract_traces_from_name(gen, x.name)
         expected_traces = {
-            (TraceName.BinopLeft, TraceName.BinopLeft, TraceName.Integral, TraceName.AppFun, TraceName.AppFun,
-             TraceName.IfBody, TraceName.BinopRight, TraceName.AppFun, TraceName.IfBody, TraceName.BinopRight,
-             TraceName.AppFun, TraceName.IfBody, TraceName.BinopLeft, TraceName.AppFun, TraceName.BinopRight,
-             TraceName.BinopRight, TraceName.BinopRight, TraceName.BinopLeft, TraceName.BinopLeft, TraceName.AppFun,
-             TraceName.Leaf),
-            (TraceName.BinopLeft, TraceName.BinopLeft, TraceName.Integral, TraceName.AppFun, TraceName.AppFun,
-             TraceName.IfBody, TraceName.BinopRight, TraceName.AppFun, TraceName.IfBody, TraceName.BinopLeft,
-             TraceName.AppFun, TraceName.BinopRight, TraceName.BinopRight, TraceName.BinopRight, TraceName.BinopLeft,
-             TraceName.BinopLeft, TraceName.AppFun, TraceName.Leaf),
-            (TraceName.BinopLeft, TraceName.BinopLeft, TraceName.Integral, TraceName.AppFun, TraceName.AppFun,
-             TraceName.IfBody, TraceName.BinopLeft, TraceName.AppFun, TraceName.BinopRight, TraceName.BinopRight,
-             TraceName.BinopRight, TraceName.BinopLeft, TraceName.BinopLeft, TraceName.AppFun, TraceName.Leaf),
+            (
+                TraceName.BinopLeft,
+                TraceName.BinopLeft,
+                TraceName.Integral,
+                TraceName.AppFun,
+                TraceName.AppFun,
+                TraceName.IfBody,
+                TraceName.BinopRight,
+                TraceName.AppFun,
+                TraceName.IfBody,
+                TraceName.BinopRight,
+                TraceName.AppFun,
+                TraceName.IfBody,
+                TraceName.BinopLeft,
+                TraceName.AppFun,
+                TraceName.BinopRight,
+                TraceName.BinopRight,
+                TraceName.BinopRight,
+                TraceName.BinopLeft,
+                TraceName.BinopLeft,
+                TraceName.AppFun,
+                TraceName.Leaf,
+            ),
+            (
+                TraceName.BinopLeft,
+                TraceName.BinopLeft,
+                TraceName.Integral,
+                TraceName.AppFun,
+                TraceName.AppFun,
+                TraceName.IfBody,
+                TraceName.BinopRight,
+                TraceName.AppFun,
+                TraceName.IfBody,
+                TraceName.BinopLeft,
+                TraceName.AppFun,
+                TraceName.BinopRight,
+                TraceName.BinopRight,
+                TraceName.BinopRight,
+                TraceName.BinopLeft,
+                TraceName.BinopLeft,
+                TraceName.AppFun,
+                TraceName.Leaf,
+            ),
+            (
+                TraceName.BinopLeft,
+                TraceName.BinopLeft,
+                TraceName.Integral,
+                TraceName.AppFun,
+                TraceName.AppFun,
+                TraceName.IfBody,
+                TraceName.BinopLeft,
+                TraceName.AppFun,
+                TraceName.BinopRight,
+                TraceName.BinopRight,
+                TraceName.BinopRight,
+                TraceName.BinopLeft,
+                TraceName.BinopLeft,
+                TraceName.AppFun,
+                TraceName.Leaf,
+            ),
         }
         self.assertEqual(traces, expected_traces)
         var_val = VarVal({n.name: 6, dn.name: 0, t.name: 0.5, dt.name: 1})
@@ -1364,7 +1429,8 @@ class TestTracedGenerate(TestCase):
         gen = self.gen(expr, var_val)
         traces = extract_traces_from_name(gen, y.name)
         expected_trace = {
-            (TraceName.Integral, TraceName.AppFun, TraceName.BinopRight, TraceName.AppFun, TraceName.Leaf)}
+            (TraceName.Integral, TraceName.AppFun, TraceName.BinopRight, TraceName.AppFun, TraceName.Leaf)
+        }
         self.assertEqual(traces, expected_trace)
         self.assertEqual(evaluate(expr, var_val, 1), 0)
 
@@ -1392,7 +1458,13 @@ class TestTracedGenerate(TestCase):
         # ((lambda f0, x0. f0(delta(a - x0))) (lambda x1. x1, x)) = delta(a - x)
         f0 = Var("f")
         x1 = Var("x1")
-        fun = Function((f0, x0,), App(f0, (Delta(Shift((a,), (x0,))),)))
+        fun = Function(
+            (
+                f0,
+                x0,
+            ),
+            App(f0, (Delta(Shift((a,), (x0,))),)),
+        )
         identity = Function((x1,), x1)
         expr = Int(App(fun, (identity, x)), mu)
         gen = self.gen(expr, var_val)
@@ -1492,7 +1564,7 @@ class TestTrickyDiffeos(TestCase):
         deriv_val = evaluate(deriv_expr, var_val, 10)
         self.assertAlmostEqual(deriv_val, 0.25, 5)
 
-    @unittest.skip('Degeneracy')
+    @unittest.skip("Degeneracy")
     def test_square(self):
         # t^2 x^2 - 2tx + 1 = (tx - 1)^2
         x = TegVar("x")
