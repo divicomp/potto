@@ -49,9 +49,11 @@ You can reproduce Figures 2 and 3 by running `case_study/plot_normal.py` and `ca
 
 
 ## Citation
+```
 @article{Michel2024Potto,
     title     = {Distributions for Compositionally Differentiating Parametric Discontinuities},
     author    = {Michel, Jesse and Mu, Kevin and Yang, Xuanda and Bangaru, Sai and Collins, Elias Rojas and Bernstein, Gilbert and Ragan-Kelley, Jonathan and Carbin, Michael and Li, Tzu-Mao},
     booktitle = {Object-Oriented Programming, Systems, Languages & Applications},
     year      = {2024}
 }
+```
