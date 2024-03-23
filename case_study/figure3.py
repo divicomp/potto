@@ -5,6 +5,7 @@ import pickle
 import time
 import matplotlib.pyplot as plt
 import cmasher as cmr
+from matplotlib import rcParams
 
 from potto import Shift, Affine, ShiftRight, FlipShift
 from potto import (
@@ -253,7 +254,7 @@ def graph_runs(all_p1s, all_p2s, all_p3s, all_losses, all_p1s_gauss, all_losses_
     # plt.subplots_adjust(bottom=0.3, top=0.9)
 
     if save:
-        plt.savefig(path + "trunc_gauss_with_legend.svg")
+        plt.savefig(path + "trunc_gauss_with_legend.pdf")
         plt.clf()
     else:
         plt.show()
@@ -261,7 +262,8 @@ def graph_runs(all_p1s, all_p2s, all_p3s, all_losses, all_p1s_gauss, all_losses_
 
 if __name__ == "__main__":
     n = 100
-
+    rcParams["text.usetex"] = True
+    rcParams["font.family"] = "libertine"
     filename1 = f"potto_erm.pkl"
     filename2 = f"potto_erm_no_param_discont.pkl"
 

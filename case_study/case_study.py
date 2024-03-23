@@ -11,6 +11,7 @@ from inspect import signature
 import scipy.optimize as spop
 import matplotlib.pyplot as plt
 import cmasher as cmr
+from matplotlib import rcParams
 
 from potto import Shift, Affine, ShiftRight
 from potto import (
@@ -51,7 +52,7 @@ def sec2_example(filename, n, viewport_width=3.0, c_offset=1.41, do_parallel=Tru
 
     @potto()
     def renderer(c, shader, px, py):
-        x, y = TegVar('x'), TegVar('y')
+        x, y = TegVar("x"), TegVar("y")
         cond = SumDiffeo((c,), (x, y))
         pix_size = viewport_width / n
         mx, my = BoundedLebesgue(px, px + pix_size, x), BoundedLebesgue(py, py + pix_size, y)
@@ -83,9 +84,9 @@ def sec2_example(filename, n, viewport_width=3.0, c_offset=1.41, do_parallel=Tru
     s3, ds3 = quad_shader()
 
     # main.py
-    px, py = Var('px'), Var('py')
-    dpx, dpy = Var('dpx'), Var('dpy')
-    c, dc = Var('c'), Var('dc')
+    px, py = Var("px"), Var("py")
+    dpx, dpy = Var("dpx"), Var("dpy")
+    c, dc = Var("c"), Var("dc")
     params = [c, px, py]
     dparams = [dc, dpx, dpy]
     init_param_vals = np.array([c_offset, 0, 0])
@@ -129,19 +130,19 @@ def sec2_example(filename, n, viewport_width=3.0, c_offset=1.41, do_parallel=Tru
         dimgs.append(dimg)
 
     for i, img in enumerate(imgs):
-        print(f'{i}\t{img}')
+        print(f"{i}\t{img}")
     for i, dimg in enumerate(dimgs):
-        print(f'{i}\t{dimg}')
+        print(f"{i}\t{dimg}")
 
-    with open(filename, 'wb') as f:
+    with open(filename, "wb") as f:
         pickle.dump(imgs, f)
-    with open(f'd{filename}', 'wb') as f:
+    with open(f"d{filename}", "wb") as f:
         pickle.dump(dimgs, f)
 
 
-def plot(filename, cmap='gray', vmin=0, vmax=1, savefig=False):
+def plot(filename, cmap="gray", vmin=0, vmax=1, savefig=False):
     # with open(f'd{filename}', 'rb') as f:
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         imgs = pickle.load(f)
     print(imgs)
 
@@ -150,7 +151,7 @@ def plot(filename, cmap='gray', vmin=0, vmax=1, savefig=False):
     n = 200
     cmap = plt.get_cmap(cmap)
     kwargs = {"cmap": cmap, "vmin": vmin, "vmax": vmax}
-    titles = ['Const Shader', 'Linear Shader', 'Quadratic Shader']
+    titles = ["Const Shader", "Linear Shader", "Quadratic Shader"]
     for i, title in enumerate(titles):
         p = ax[i].imshow(imgs[i][0:n, 0:n], **kwargs)
         ps.append(p)
@@ -160,18 +161,22 @@ def plot(filename, cmap='gray', vmin=0, vmax=1, savefig=False):
         # ax[i]._colorbars()
     cax = f.add_axes([ax[-1].get_position().x1 + 0.01, ax[-1].get_position().y0, 0.02, ax[-1].get_position().height])
     f.colorbar(ps[-1], cax=cax)
-    plt.rcParams['path.simplify_threshold'] = 1.0
+    plt.rcParams["path.simplify_threshold"] = 1.0
     if savefig:
-        plt.savefig('../out/' + filename[:-4] + '600ppi.png', format='png', dpi=600)
+        filename = "primal_attenuation_shaders.pdf"
+        path = "/Users/jessemichel/research/potto_project/potto_paper/images/"
+        plt.savefig(path + filename)
     plt.show()
 
 
 if __name__ == "__main__":
     n = 100
+    rcParams["text.usetex"] = True
+    rcParams["font.family"] = "Biolinum"
     filename = f"imgs_shift{n}x{n}3width100res.pkl"
     sec2_example(filename, n)
     filename = f"imgs_shift{n}x{n}3width100res.pkl"
-    plot(filename, cmap='cmr.eclipse', vmin=0, vmax=1)
+    plot(filename, cmap="cmr.eclipse", vmin=0, vmax=1, savefig=True)
     filename = f"dimgs_shift{n}x{n}3width100res.pkl"
     # plot(filename, cmap=cmr.get_sub_cmap('cmr.seasons_s', 0.05, 0.95), vmin=-1, vmax=1)
-    plot(filename, cmap='cmr.wildfire_r', vmin=-1.5, vmax=1.5)
+    plot(filename, cmap="cmr.wildfire_r", vmin=-1.5, vmax=1.5, savefig=True)
