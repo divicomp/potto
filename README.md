@@ -16,7 +16,7 @@ We present the example depicted in Figure 1 of the paper:
 
 which is the derivative of the integral of a jump discontinuity that is `1` if `x <= t` and `0` otherwise.
 
-At `t=0.5`, the the result is `1`. However, discretizing before computing the derivative as is standard in differentiable programming languages (e.g., PyTorch and TensorFlow) results in a derivative of 0. 
+At `t=0.5`, the correct answer is `1`. However, discretizing before computing the derivative as is standard in differentiable programming languages (e.g., PyTorch and TensorFlow) results in a derivative of 0. 
 
 In Potto, we can implement this example with:
 ```python
