@@ -46,7 +46,7 @@ The `potto` folder contains the core implementation. We break the implementation
 
 
 ## Figures
-You can reproduce Figures 2 and 3 by running `case_study/plot_normal.py` and `case_study/figure3.py`.
+You can reproduce Figures 2 and 3 by running `case_study/plot_normal.py` and `case_study/figure3.py --plot`. You can rerun the experiment in Figure 3 by running `case_study/figure3.py --run`.
 
 
 ## Citation
