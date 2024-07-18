@@ -55,12 +55,12 @@ class SumDiffeo(Affine):
         return f"{self.__class__.__name__}({self.vars, self.tvars})"
 
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        c, = vars
+        (c,) = vars
         x, y = tvars
         return np.sqrt(0.5) * (x + y) - c, np.sqrt(0.5) * (x - y) - c
 
     def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        c, = vars
+        (c,) = vars
         w, z = tvars
         return (w + z + 2 * c) / (2 * np.sqrt(0.5)), (w - z) / (2 * np.sqrt(0.5))
 
@@ -75,14 +75,14 @@ class QuadraticSquaredMinus1(Diffeomorphism):
         return f"QuadraticSquaredMinus1({self.vars, self.tvars})"
 
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
-        x, = tvars
-        return t * t * x * x - 1,
+        (t,) = vars
+        (x,) = tvars
+        return (t * t * x * x - 1,)
 
     def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
-        y, = tvars
-        return Sqrt(y + 1) / t,
+        (t,) = vars
+        (y,) = tvars
+        return (Sqrt(y + 1) / t,)
 
     def bounds_transfer(self, lower_bounds: tuple, upper_bounds: tuple, env):
         lb, ub = lower_bounds[0], upper_bounds[0]
@@ -107,14 +107,14 @@ class SumOfSquares(Diffeomorphism):
         return f"SumOfSquares({self.vars, self.tvars})"
 
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
-        x, = tvars
-        return t * t * x * x - 2 * t * x + 1,
+        (t,) = vars
+        (x,) = tvars
+        return (t * t * x * x - 2 * t * x + 1,)
 
     def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
-        y, = tvars
-        return (Sqrt(y) + 1) / t,
+        (t,) = vars
+        (y,) = tvars
+        return ((Sqrt(y) + 1) / t,)
 
     def bounds_transfer(self, lower_bound: tuple, upper_bound: tuple, env):
         raise NotImplementedError
@@ -130,14 +130,14 @@ class Scale2ShiftT(Diffeomorphism):
         return f"{self.__class__.__name__}({self.vars, self.tvars})"
 
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
-        x, = tvars
-        return 2 * x - t,
+        (t,) = vars
+        (x,) = tvars
+        return (2 * x - t,)
 
     def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
-        y, = tvars
-        return (y + t) / 2,
+        (t,) = vars
+        (y,) = tvars
+        return ((y + t) / 2,)
 
     def bounds_transfer(self, lower_bounds: tuple, upper_bounds: tuple, env):
         t = evaluate(self.vars[0], env)
@@ -154,14 +154,14 @@ class ScaleByT(Diffeomorphism):
         return f"ScaleByT({self.vars, self.tvars})"
 
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
-        x, = tvars
-        return t * x - 1,
+        (t,) = vars
+        (x,) = tvars
+        return (t * x - 1,)
 
     def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
-        y, = tvars
-        return (y + 1) / t,
+        (t,) = vars
+        (y,) = tvars
+        return ((y + 1) / t,)
 
     def bounds_transfer(self, lower_bounds: tuple, upper_bounds: tuple, env):
         t = evaluate(self.vars[0], env)
@@ -209,7 +209,7 @@ class FlipShift(Affine):
     """
 
     def __str__(self):
-        return "(k - x,)"
+        return f"({self.vars[0].name} - {self.tvars[0].name},)"
 
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
         return (vars[0] - tvars[0],)
@@ -234,12 +234,12 @@ class ShiftByT2D(Affine):
         return "[x + t, y]"
 
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
+        (t,) = vars
         x, y = tvars
         return x + t, y
 
     def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
+        (t,) = vars
         w, z = tvars
         return w - t, z
 
@@ -260,12 +260,12 @@ class SquareSlice2(Affine):
         return "[y - 2x + t, y]"
 
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
+        (t,) = vars
         x, y = tvars
         return 4 * y - 2 * x + 3 * t, y
 
     def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
+        (t,) = vars
         w, z = tvars
         return (4 * z - w + 3 * t) / 2, z
 
@@ -286,12 +286,12 @@ class SquareSlice(Affine):
         return "[y - 2x + t, y]"
 
     def function(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
+        (t,) = vars
         x, y = tvars
         return y - 2 * x + t, y
 
     def inverse(self, vars: tuple[Var, ...], tvars: tuple[TegVar, ...]) -> tuple[GExpr, ...]:
-        t, = vars
+        (t,) = vars
         w, z = tvars
         return (z - w + t) / 2, z
 
