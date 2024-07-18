@@ -7,7 +7,10 @@ from potto.lang.grammar import GExpr, Const, UnaryBuiltin, Diffeomorphism, heavi
 @dataclass(frozen=True)
 class Sqrt(UnaryBuiltin):
     def eval(self, evaluate_helper, env):
-        return math.sqrt(evaluate_helper(self.expr, env))
+        try:
+            return math.sqrt(evaluate_helper(self.expr, env))
+        except ValueError:
+            return math.nan
 
     def deriv(self, derivative, context):
         return 1 / (2 * Sqrt(derivative(self.expr, context)))
