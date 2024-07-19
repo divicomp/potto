@@ -1,6 +1,8 @@
 # Potto
 Potto is a differentiable programming language that has an integral primitive and supports separate compilation. This repository contains the core library implementation, while the applications can be found at https://github.com/divicomp/potto_applications. The applications include differentiating a ray tracing renderer.
 
+This is experimental research code. The goal of this repo is to validate the ideas in the paper.
+
 ## Installation Instructions
 Potto requires Python 3.10+. To install Potto, run:
 ```
