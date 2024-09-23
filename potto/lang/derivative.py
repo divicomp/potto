@@ -66,7 +66,7 @@ class DerivDiffeo(Diffeomorphism):
         return dv
 
 
-def deriv(expr: GExpr, context: dict[Sym, Sym]) -> GExpr:
+def deriv(expr: GExpr, context: dict[Sym, Sym], delta=True) -> GExpr:
     match expr:
 
         case Const():
@@ -79,14 +79,14 @@ def deriv(expr: GExpr, context: dict[Sym, Sym]) -> GExpr:
             return TegVar(context[name]) if name in context else Const(0)
 
         case Add(left, right):
-            return deriv(left, context) + deriv(right, context)
+            return deriv(left, context, delta) + deriv(right, context, delta)
 
         case Mul(left, right):
-            dleft, dright = deriv(left, context), deriv(right, context)
+            dleft, dright = deriv(left, context, delta), deriv(right, context, delta)
             return dleft * right + left * dright
 
         case Div(left, right):
-            dleft, dright = deriv(left, context), deriv(right, context)
+            dleft, dright = deriv(left, context, delta), deriv(right, context, delta)
             return (dleft * right - left * dright) / (right * right)
 
         case Function(arg_names, body, name):
@@ -99,50 +99,56 @@ def deriv(expr: GExpr, context: dict[Sym, Sym]) -> GExpr:
             for n, dn in zip(arg_names, darg_names):
                 new_context[n.name] = dn.name
             infinitesimal_ind = num_args if num_args > 0 else -1
-            return Function(new_arg_names, deriv(body, new_context), name, infinitesimal_ind)
+            return Function(new_arg_names, deriv(body, new_context, delta), name, infinitesimal_ind)
 
         case Diffeomorphism(vars, tvars) as diffeo:
 
             vars_infinitesimals = vars + tuple(Var(context[v.name]) for v in vars)
             tvars_infinitesimals = tuple(TegVar(context[tv.name]) for tv in tvars)
 
-            weight = 1 / deriv(diffeo.function(vars, tvars)[0], {tvars[0]: 0})
+            weight = 1 / deriv(diffeo.function(vars, tvars)[0], {tvars[0]: 0}, delta)
 
             return DerivDiffeo(vars_infinitesimals, tvars_infinitesimals, weight, diffeo, context)
 
         case App(function, args, name):
-            args_and_infinitesimals = args + tuple(deriv(a, context) for a in args)
-            return App(deriv(function, context), args_and_infinitesimals, name)
+            args_and_infinitesimals = args + tuple(deriv(a, context, delta) for a in args)
+            return App(deriv(function, context, delta), args_and_infinitesimals, name)
 
         case Int(integrand, mu):
             new_context = context.copy()
-            dx = Sym(f'd{mu.tvar.name.name}')
+            dx = Sym(f"d{mu.tvar.name.name}")
             new_context[mu.tvar.name] = dx
             lower_ctx = {mu.tvar.name: mu.lower, dx: Const(0)}
             upper_ctx = {mu.tvar.name: mu.upper, dx: Const(0)}
             # Leibniz Rule
             lower = (
-                deriv(mu.lower, context) * substitute(integrand, lower_ctx)
+                deriv(mu.lower, context, delta) * substitute(integrand, lower_ctx)
                 if isinstance(mu.lower, GExpr) and not isinstance(mu.lower, Const)
                 else Const(0)
             )
             upper = (
-                deriv(mu.upper, context) * substitute(integrand, upper_ctx)
+                deriv(mu.upper, context, delta) * substitute(integrand, upper_ctx)
                 if isinstance(mu.upper, GExpr) and not isinstance(mu.upper, Const)
                 else Const(0)
             )
 
             dmu = DerivMeas(mu.lower, mu.upper, mu.tvar, TegVar(dx), mu)
-            return Int(deriv(integrand, new_context), dmu) + upper - lower
+            return Int(deriv(integrand, new_context, delta), dmu) + upper - lower
 
         case IfElse(cond, if_body, else_body, trace):
-            interior_deriv = IfElse(cond, deriv(if_body, context), deriv(else_body, context))
+            interior_deriv = IfElse(cond, deriv(if_body, context, delta), deriv(else_body, context, delta))
             match cond:
                 case Diffeomorphism(vars, tvars):
                     fout = cond.function(vars, tvars)[0]
-                    return interior_deriv + Delta(cond, trace) * deriv(fout, context) * (if_body - else_body)
+                    delta_term = (
+                        Delta(cond, trace) * deriv(fout, context, delta) * (if_body - else_body) if delta else 0
+                    )
+                    return interior_deriv + delta_term
                 case TegVar(name):
-                    return interior_deriv + Delta(cond, trace) * deriv(cond, context) * (if_body - else_body)
+                    delta_term = (
+                        Delta(cond, trace) * deriv(cond, context, delta) * (if_body - else_body) if delta else 0
+                    )
+                    return interior_deriv + delta_term
                 case _:
                     return interior_deriv
 
