@@ -1,5 +1,5 @@
 # Potto
-Potto is a differentiable programming language that has an integral primitive and supports separate compilation. This repository contains the core library implementation, while the applications can be found at https://github.com/divicomp/potto_applications. The applications include differentiating a ray tracing renderer.
+Potto is a differentiable programming language that has an integral primitive and supports separate compilation. You can find the paper [here](https://dl.acm.org/doi/10.1145/3649843). This repository contains the core library implementation, while the applications can be found at https://github.com/divicomp/potto_applications. The applications include differentiating a ray tracing renderer.
 
 This is experimental research code. The goal of this repo is to validate the ideas in the paper.
 
