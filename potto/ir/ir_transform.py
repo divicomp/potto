@@ -11,6 +11,7 @@ from potto.lang.grammar import (
     Add,
     Mul,
     Div,
+    SingularDivision,
     Function,
     App,
     Int,
@@ -24,6 +25,7 @@ from potto.ir.ir_env import (
     Add as IRAdd,
     Mul as IRMul,
     Div as IRDiv,
+    SingularDivision as IRSingularDivision,
     Function as IRFunction,
     App as IRApp,
     Int as IRInt,
@@ -106,6 +108,12 @@ def grammar_to_ir_env(expr: GExpr) -> IREnv:
         case Div(left, right):
             irleft, irright = grammar_to_ir_env(left), grammar_to_ir_env(right)
             return IRDiv(irleft, irright)
+
+        case SingularDivision(numerator, x, s, power):
+            irnumerator = grammar_to_ir_env(numerator)
+            irx = grammar_to_ir_env(x)
+            irs = grammar_to_ir_env(s)
+            return IRSingularDivision(irnumerator, irx, irs, power)
 
         case Function(arg_names, body, name, infinitesimal_ind):
             irbody = grammar_to_ir_env(body)

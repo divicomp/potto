@@ -213,6 +213,24 @@ class Div(GExpr):
 
 
 @dataclass(frozen=True)
+class SingularDivision(GExpr):
+    numerator: GExpr
+    x: TegVar
+    s: Var
+    power: int
+
+    def __init__(self, numerator, x, s, power):
+        super().__init__()
+        object.__setattr__(self, "numerator", GExpr.to_gexpr(numerator))
+        object.__setattr__(self, "x", GExpr.to_gexpr(x))
+        object.__setattr__(self, "s", GExpr.to_gexpr(s))
+        object.__setattr__(self, "power", power)
+
+    def __str__(self):
+        return f"({self.numerator}) / ({self.x} - {self.s})^{self.power}"
+
+
+@dataclass(frozen=True)
 class Measure(ABC):
     lower: GExpr
     upper: GExpr

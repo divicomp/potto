@@ -16,6 +16,7 @@ from potto.lang.grammar import (
     Sym,
     App,
     Measure,
+    SingularDivision,
 )
 from potto.lang.samples import VarVal
 from potto.lang.substitute import substitute
@@ -88,6 +89,20 @@ def deriv(expr: GExpr, context: dict[Sym, Sym], delta=True) -> GExpr:
         case Div(left, right):
             dleft, dright = deriv(left, context, delta), deriv(right, context, delta)
             return (dleft * right - left * dright) / (right * right)
+
+        case SingularDivision(numerator, x, s, power):
+            # Derivative d/ds f(s, x) / (x - s)^power
+            # = f(s, x) / (x - s)^(power + 1) + df/ds(s, x) * power / (x - s)^power
+            if context.get(s.name) is not None:
+                dx = Sym(f"dx")
+                # dnum/dx * num / (x - s)^power
+                dnum_dx =  substitute(deriv(numerator, {x.name: dx}, delta), {dx: Const(1)})
+                return (
+                    SingularDivision(dnum_dx, x, s, power)
+                    + SingularDivision(numerator * Const(power), x, s, power + 1) * deriv(s, context, delta)
+                )
+            else:
+                return SingularDivision(deriv(numerator, context, delta), x, s, power)
 
         case Function(arg_names, body, name):
             # (kmu) In the future, consider using a dual-like representation rather

@@ -1,6 +1,5 @@
 import math
 from numpy.random import uniform
-from dataclasses import dataclass, field
 from collections import defaultdict
 from multiprocessing import Pool
 from functools import partial
@@ -14,6 +13,7 @@ from potto.ir.ir_env import (
     Add,
     Mul,
     Div,
+    SingularDivision,
     Function,
     Int,
     IfElse,
@@ -41,14 +41,14 @@ from potto.lang.evaluate_utils import (
     get_full_sample_bundles,
     trim_trace,
 )
-from potto.lang.traces import TraceName
+from potto.lang.traces import TraceName, Trace
 
 
 # NOTE: Idea: flip the ordering of the arrows and share common objects
 # TODO: Relate each sample with its trace
 
 
-def generate(expr, env, num_samples, gen_samples):
+def generate(expr, env, num_samples, gen_samples) -> Gen:
     """A single sample for every variable of integration in expr."""
 
     def gen(expr: IREnv, env: Environment, gen_samples: TraceEnv) -> Gen:
@@ -64,6 +64,46 @@ def generate(expr, env, num_samples, gen_samples):
                 lgen = gen(left, env, gen_samples)
                 rgen = gen(right, env, gen_samples)
                 return multi_extend_samples_traces({TraceName.BinopLeft: lgen, TraceName.BinopRight: rgen})
+
+            case SingularDivision(numerator, x, s):
+                # Propagate generation through children first
+                samps = extend_samples_trace(TraceName.Singular, gen(numerator, env, gen_samples))
+
+                # Attempt to take symmetric samples for the integration variable if denominator is linear
+                lb, ub = env.get_bounds(x.name)
+                lo, hi = (lb, ub) if lb <= ub else (ub, lb)
+                s_val = env[s.name]
+
+                # Only generate if the singularity is inside the interval
+                if not (lo < s_val < hi):
+                    return samps
+
+                symm_middle, symm_upper, rest_lower, rest_upper = (
+                    (s_val, hi, lo, 2 * s_val - hi) if s_val - lo > hi - s_val else (s_val, 2 * s_val - lo, 2 * s_val - lo, hi)
+                )
+                # sample from symm_middle and symm_upper
+                symm_sample = uniform(symm_middle, symm_upper)
+
+                # Add symmetric samples for the integration variable
+                # Create symmetric samples and extend with proper trace
+                symmetric_size = symm_upper - symm_middle
+                gen_samples = tuple()
+                if symmetric_size > 0:
+                    # Build distinct traces for the symmetric pair so they don't collapse in bundling
+                    # final chains: Singular -> BinopLeft/Right -> prior_chain
+                    left_trace = Trace.add_trace(TraceName.Singular, Trace(TraceName.BinopLeft))
+                    right_trace = Trace.add_trace(TraceName.Singular, Trace(TraceName.BinopRight))
+                    gs_left = GenSample(symm_sample, symmetric_size, left_trace)
+                    gs_right = GenSample(2 * s_val - symm_sample, symmetric_size, right_trace)
+                    gen_samples = (gs_left, gs_right)
+
+                if rest_upper > rest_lower:
+                    vr = uniform(rest_lower, rest_upper)
+                    w_rest = rest_upper - rest_lower
+                    rest_trace = Trace.add_trace(TraceName.Singular, Trace(TraceName.Leaf))
+                    gs_rest = GenSample(vr, w_rest, rest_trace)
+                    gen_samples += (gs_rest,)
+                return samps | Gen({x: gen_samples})
 
             case App(function_, args, app_name) as expr:
                 function: Function = evaluate(function_, env, gen_samples)
@@ -172,6 +212,11 @@ def generate(expr, env, num_samples, gen_samples):
                 new_gen = TraceEnv(new_gen_bindings, gen_samples)
                 integrand_gen = gen(integrand, new_env, new_gen)
                 next_gen = extend_samples_trace(TraceName.Integral, integrand_gen)
+
+                # If the integrand contains an in-bounds singular division in this tvar,
+                # we rely on the symmetric samples produced there and skip the base sample
+                # if _has_inbounds_singular_for_tvar(integrand, measure.tvar.name, new_env):
+                #     return next_gen
                 return next_gen | Gen({measure.tvar.name: (sample,)})
 
             case _:
@@ -198,6 +243,11 @@ def naive_evaluate(expr: GExpr | IREnv, env: Environment):
             return naive_evaluate(left, env) * naive_evaluate(right, env)
         case Div(left, right):
             return naive_evaluate(left, env) / naive_evaluate(right, env)
+        case SingularDivision(numerator, x, s, power):
+            num_val = naive_evaluate(numerator, env)
+            x_val = naive_evaluate(x, env)
+            s_val = naive_evaluate(s, env)
+            return num_val / ((x_val - s_val) ** power)
         case Int():
             raise TypeError('Cannot naively evaluate a integral expression')
         case Delta():
@@ -229,25 +279,35 @@ def eval_integrand_once(
 ):
     trace_to_sample = {}
     all_samples = Gen()
-    generated = generate(expr, env, num_samples, gen_samples).items()
-    for tvar_name, samples in generated:
-        new_samples = []
-        for sample in samples:
-            new_samples.append(sample)
-        all_samples[tvar_name] = tuple(new_samples)
-
+    for tvar_name, samples in generate(expr, env, num_samples, gen_samples).items():
+        all_samples[tvar_name] = tuple(samples)
+    # print("all_samples", all_samples)
+    # print("bundles", {b.trace: b[x].sample for b in get_full_sample_bundles(all_samples)})
     for bundle in get_full_sample_bundles(all_samples):
         tvar_sample = bundle[x]
+        # print("tvar_sample", tvar_sample.sample)
         if not measure_lower < tvar_sample.sample < measure_upper:  # Skip out-of-bounds samples
             continue
-        weight = tvar_sample.weight if tvar_sample.trace is None else 1
+        weight = tvar_sample.weight
         new_trace = bundle.trace.discard_first()[1] if bundle.trace is not None else None
         bundle.trace = new_trace
         bundle[x] = GenSample(tvar_sample.sample, tvar_sample.weight, None)
         bundle_gen = TraceEnv(bundle, new_gen, new_trace)
         bundle_env = Environment({t: v.sample for t, v in bundle.items()}, new_env)
+        # if bundle.trace is not None:
+        #     print("btrace", bundle.trace)
+        #     print("bx", bundle[x])
+        #     print("bundle_gen", bundle_env)
+        #     print("sample", tvar_sample.sample)
         integrand_val = evaluate(integrand, bundle_env, num_samples, bundle_gen)
         trace_to_sample[bundle.trace] = weight * integrand_val
+    #     if bundle.trace is not None:
+    #         print("expr", expr)
+    #         print("val", weight*tvar_sample.sample / (tvar_sample.sample - 0.1))
+    #         print("weight * integrand_val", weight * integrand_val)
+    #     print("--------------------------------")
+    # print("--------------------------------")
+    # print("final trace_to_sample", trace_to_sample)
     return trace_to_sample
 
 
@@ -313,8 +373,54 @@ def evaluate(
                 right, env, num_samples, right_gen_samples
             )
 
+        case SingularDivision(numerator, x, s, power):
+            if gen_samples.trace is None:
+                return 0
+            s_val = evaluate(s, env, num_samples, gen_samples)
+            x_val = evaluate(x, env, num_samples, gen_samples)
+            # If the singularity is out of bounds, fall back to naive pointwise evaluation
+            lb, ub = env.get_bounds(x.name)
+            lo, hi = (lb, ub) if lb <= ub else (ub, lb)
+
+            if not (lo < s_val < hi):
+                num_val = evaluate(numerator, env, num_samples, gen_samples)
+                return num_val / ((x_val - s_val) ** power)
+            else:
+                if power == 1:
+                    num_val = evaluate(numerator, env, num_samples, gen_samples)
+                    x_val = evaluate(x, env, num_samples, gen_samples)
+                    s_val = evaluate(s, env, num_samples, gen_samples)
+                    return num_val / ((x_val - s_val) ** power)
+                if power == 2:
+                    # Use endpoint reduction and a reduced power-1 term with higher derivatives
+                    # Reference: singular_integrate._singular_integrate for pow > 1
+                    s_val = evaluate(s, env, num_samples, gen_samples)
+                    x_val = evaluate(x, env, num_samples, gen_samples)
+
+
+                    # Boundary terms: sum_{i=1}^{power-1} - (i-1)! * ( f^{(i-1)}(b)/(b-s)^i - f^{(i-1)}(a)/(a-s)^i )
+                    dx = Var(f"d{x.name}")
+                    i = 2
+                    lo_env = Environment({x.name: lo}, env)
+                    num_a = evaluate(numerator, lo_env)
+                    hi_env = Environment({x.name: hi}, env)
+                    num_b = evaluate(numerator, hi_env)
+                    # x/(x - 0.5) |^1_0 = 1/(1 - 0.5) - 0/(0 - 0.5) = 2
+                    boundary_total = (num_a / (lo - s_val) - num_b / (hi - s_val)) * (1 / gen_samples[x.name].weight)
+                    
+                    # Reduced singular division term with power 1 on (power-1)-th derivative
+                    new_env = Environment({dx.name: 1}, env)
+                    dnum_dx = evaluate(deriv(_ir_to_gexpr(numerator), {x.name: dx.name}), new_env, num_samples, gen_samples)
+                    pow1_term = dnum_dx / (x_val - s_val)
+
+                    # Attach boundary terms to a single child trace to avoid double-counting per run
+                    add_boundary = 1 if gen_samples.trace.name == TraceName.BinopLeft else 0
+                    return (pow1_term + add_boundary * boundary_total)
+        
+
         case Diffeomorphism(vars, tvars, _, _) as diffeo:
-            return tuple(evaluate(expr, env, num_samples, gen_samples) for expr in diffeo.function(vars, tvars))
+            return tuple(evaluate(expr, env, num_samples, gen_samples) for expr in diffeo.function
+            (vars, tvars))
 
         case App(function_, args, name) as expr:
             body_trace = gen_samples.trace
@@ -393,6 +499,7 @@ def evaluate(
 
             x = measure.tvar.name
             measure_lower, measure_upper = measure.get_bounds(env, num_samples, gen_samples)
+            env.bounds[measure.tvar.name] = (measure_lower, measure_upper)
 
             do_eval = partial(
                 eval_integrand_once,
@@ -422,6 +529,8 @@ def evaluate(
             for d in monte_carlo_runs:
                 for k, v in d.items():
                     trace_to_samples[k].append(v)
+            # print("_________________________")
+            # print("trace_to_samples", trace_to_samples.keys())
             return sum(np.average(v) for v in trace_to_samples.values())
 
         case _:
@@ -435,6 +544,29 @@ def evaluate_all(
     env = to_env(env_or_var_val)
 
     return evaluate(expr, env, num_samples)
+
+
+# def _has_inbounds_singular_for_tvar(expr: IREnv, tvar_name: str, env: Environment) -> bool:
+#     """Check if expr contains a SingularDivision with an in-bounds singularity for the given tvar."""
+#     match expr:
+#         case SingularDivision(_, x, s, _):
+#             if x.name == tvar_name:
+#                 lb, ub = env.get_bounds(tvar_name)
+#                 s_val = env[s.name]
+#                 return lb < s_val < ub
+#             return False
+#         case Add(left, right) | Mul(left, right) | Div(left, right):
+#             return _has_inbounds_singular_for_tvar(left, tvar_name, env) or _has_inbounds_singular_for_tvar(right, tvar_name, env)
+#         case UnaryBuiltin(e):
+#             return _has_inbounds_singular_for_tvar(e, tvar_name, env)
+#         case App(_, args, _):
+#             return any(_has_inbounds_singular_for_tvar(arg, tvar_name, env) for arg in args)
+#         case IfElse(_, if_body, else_body):
+#             return _has_inbounds_singular_for_tvar(if_body, tvar_name, env) or _has_inbounds_singular_for_tvar(else_body, tvar_name, env)
+#         case Int(integrand, _):
+#             return _has_inbounds_singular_for_tvar(integrand, tvar_name, env)
+#         case _:
+#             return False
 
 
 def reweight_samples_with_diffeo(body_gen, val_body_gen, function, args, tvar_arg_name, env, gen_samples):
@@ -527,3 +659,103 @@ def reweight_samples_with_diffeo(body_gen, val_body_gen, function, args, tvar_ar
                 pass
     removed_abstraction = Gen({k: tuple(v) for k, v in body_gen_pullup_temp.items() if k not in to_remove})
     return removed_abstraction
+
+# def _extract_linear_form(expr: IREnv):
+#     """Represent expr as a*x + b for a single TegVar if possible. Return (x_name, a, b) or None."""
+#     match expr:
+#         case TegVar(name):
+#             return (name, 1.0, 0.0)
+#         case Const(c):
+#             return (None, 0.0, float(c))
+#         case Add(left, right):
+#             l = _extract_linear_form(left)
+#             r = _extract_linear_form(right)
+#             # if l is None or r is None:
+#             #     return None
+#             lname, la, lb = l
+#             rname, ra, rb = r
+#             if lname is None and rname is None:
+#                 return (None, 0.0, lb + rb)
+#             if lname is None and rname is not None:
+#                 return (rname, ra, lb + rb)
+#             if lname is not None and rname is None:
+#                 return (lname, la, lb + rb)
+#             # Both are variables; must be the same variable
+#             if lname == rname:
+#                 return (lname, la + ra, lb + rb)
+#             # return None
+#         case Mul(left, right):
+#             # Only support scalar * linear
+#             l = _extract_linear_form(left)
+#             r = _extract_linear_form(right)
+#             if isinstance(left, Const) and r is not None:
+#                 c = float(left.value)
+#                 rname, ra, rb = r
+#                 return (rname, c * ra, c * rb)
+#             if isinstance(right, Const) and l is not None:
+#                 c = float(right.value)
+#                 lname, la, lb = l
+#                 return (lname, c * la, c * lb)
+#             return None
+#         case _:
+#             return None
+
+
+def _ir_to_gexpr(expr: IREnv):
+    import potto.lang.grammar as g
+    match expr:
+        case Const(c):
+            return g.Const(c)
+        case Var(name):
+            return g.Var(name)
+        case TegVar(name):
+            return g.TegVar(name)
+        case Add(left, right):
+            l = _ir_to_gexpr(left)
+            r = _ir_to_gexpr(right)
+            if l is None or r is None:
+                return None
+            return g.Add(l, r)
+        case Mul(left, right):
+            l = _ir_to_gexpr(left)
+            r = _ir_to_gexpr(right)
+            if l is None or r is None:
+                return None
+            return g.Mul(l, r)
+        case Div(left, right):
+            l = _ir_to_gexpr(left)
+            r = _ir_to_gexpr(right)
+            if l is None or r is None:
+                return None
+            return g.Div(l, r)
+        case _:
+            return None
+
+
+def _eval_kth_derivative(numer_expr: IREnv, var_name: Sym, order: int, x_val: float, base_env: Environment) -> float:
+    """Use symbolic deriv() for k-th derivative when possible; fallback to numeric if needed."""
+    if order <= 0:
+        return float(naive_evaluate(numer_expr, Environment({var_name: x_val}, base_env)))
+
+    gexpr = _ir_to_gexpr(numer_expr)
+
+    # Build successive derivative symbol chain: x -> dx -> ddx -> ...
+    symbols_chain: list[Sym] = []
+    prev = var_name
+    context: dict[Sym, Sym] = {}
+    for _i in range(int(order)):
+        next_sym = Sym(f'd{prev.name}')
+        context[prev] = next_sym
+        symbols_chain.append(next_sym)
+        prev = next_sym
+
+    # Apply deriv repeatedly with expanding context
+    dexpr = gexpr
+    for _ in range(int(order)):
+        dexpr = deriv(dexpr, context)
+
+    # Evaluate with x = x_val, dx = 1, higher-order symbols = 0
+    env_overlay = {var_name: x_val}
+    for j, s in enumerate(symbols_chain):
+        env_overlay[s] = 1.0 if j == 0 else 0.0
+    return float(naive_evaluate(dexpr, Environment(env_overlay, base_env)))

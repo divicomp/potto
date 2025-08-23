@@ -15,6 +15,7 @@ from potto.lang.grammar import (
     App,
     IfElse,
     heaviside,
+    SingularDivision,
 )
 from potto.lang.evaluate import evaluate, evaluate_all
 from potto.lang.derivative import deriv

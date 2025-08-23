@@ -200,11 +200,21 @@ def get_full_sample_bundles(g: Gen) -> list[SampleBundle]:
         for s in samps:
             bundle = trace_to_sample_bundle[s.trace]
             bundle[tv] = GenSample(s.sample, s.weight, None)
+            # If tv is a TegVar, also add the sample under its .name for lookup
+            if hasattr(tv, 'name'):
+                bundle[tv.name] = GenSample(s.sample, s.weight, None)
             bundle.trace = s.trace
     base_bundle = trace_to_sample_bundle[None]
     all_full_bundles = []
     for bundle in trace_to_sample_bundle.values():
-        unset_tvs = base_bundle.keys() - bundle.keys()
+        # Check which variables from base_bundle are missing from this bundle
+        # Account for TegVar.name relationship: if bundle has TegVar(name=sym), it also has sym
+        bundle_keys = set(bundle.keys())
+        for key in list(bundle_keys):
+            if hasattr(key, 'name'):
+                bundle_keys.add(key.name)
+        
+        unset_tvs = base_bundle.keys() - bundle_keys
         for tv in unset_tvs:
             bundle[tv] = base_bundle[tv]
         all_full_bundles.append(bundle)

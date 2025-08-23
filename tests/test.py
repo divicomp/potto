@@ -748,8 +748,8 @@ class TestAbstraction(TestCase):
                 return x * x
         
         the above in math:
-        f(t) \int_x x^2 + \sum_{k=1}^n x*H(t+k-x)
-        d/dt f(t) =  \int_x \sum_{k=1}^n x*delta(t+k-x)
+        f(t) = int_x x^2 + sum_{k=1}^n x*H(t+k-x)
+        d/dt f(t) =  int_x sum_{k=1}^n x*delta(t+k-x)
         n = 1 0.15
         n = 2 0.3
         """

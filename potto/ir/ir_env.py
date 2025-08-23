@@ -188,6 +188,17 @@ class Div(IREnv):
 
 
 @dataclass(frozen=True)
+class SingularDivision(IREnv):
+    numerator: IREnv
+    x: TegVar
+    s: Var
+    power: int
+
+    def __str__(self):
+        return f"({self.numerator}) / ({self.x} - {self.s})^{self.power}"
+
+
+@dataclass(frozen=True)
 class Measure(ABC):
     lower: IREnv
     upper: IREnv

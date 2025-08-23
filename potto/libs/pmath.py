@@ -77,3 +77,26 @@ class Abs(UnaryBuiltin):
 
     def __str__(self):
         return f"abs({self.expr})"
+    
+
+@dataclass(frozen=True)
+class Sin(UnaryBuiltin):
+    def eval(self, evaluate_helper, env):
+        return math.sin(evaluate_helper(self.expr, env))
+
+    def deriv(self, derivative, context):
+        return Cos(self.expr) * derivative(self.expr, context)
+
+    def __str__(self):
+        return f"sin({self.expr})"
+
+@dataclass(frozen=True)
+class Cos(UnaryBuiltin):
+    def eval(self, evaluate_helper, env):
+        return math.cos(evaluate_helper(self.expr, env))
+
+    def deriv(self, derivative, context):
+        return -Sin(self.expr) * derivative(self.expr, context)
+
+    def __str__(self):
+        return f"cos({self.expr})"

@@ -11,6 +11,7 @@ class TraceName(Enum):
     Leaf = auto()
     Fun = auto()
     Integral = auto()
+    Singular = auto()
 
 
 class Trace:
