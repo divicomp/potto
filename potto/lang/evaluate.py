@@ -281,11 +281,8 @@ def eval_integrand_once(
     all_samples = Gen()
     for tvar_name, samples in generate(expr, env, num_samples, gen_samples).items():
         all_samples[tvar_name] = tuple(samples)
-    # print("all_samples", all_samples)
-    # print("bundles", {b.trace: b[x].sample for b in get_full_sample_bundles(all_samples)})
     for bundle in get_full_sample_bundles(all_samples):
         tvar_sample = bundle[x]
-        # print("tvar_sample", tvar_sample.sample)
         if not measure_lower < tvar_sample.sample < measure_upper:  # Skip out-of-bounds samples
             continue
         weight = tvar_sample.weight
@@ -294,20 +291,8 @@ def eval_integrand_once(
         bundle[x] = GenSample(tvar_sample.sample, tvar_sample.weight, None)
         bundle_gen = TraceEnv(bundle, new_gen, new_trace)
         bundle_env = Environment({t: v.sample for t, v in bundle.items()}, new_env)
-        # if bundle.trace is not None:
-        #     print("btrace", bundle.trace)
-        #     print("bx", bundle[x])
-        #     print("bundle_gen", bundle_env)
-        #     print("sample", tvar_sample.sample)
         integrand_val = evaluate(integrand, bundle_env, num_samples, bundle_gen)
         trace_to_sample[bundle.trace] = weight * integrand_val
-    #     if bundle.trace is not None:
-    #         print("expr", expr)
-    #         print("val", weight*tvar_sample.sample / (tvar_sample.sample - 0.1))
-    #         print("weight * integrand_val", weight * integrand_val)
-    #     print("--------------------------------")
-    # print("--------------------------------")
-    # print("final trace_to_sample", trace_to_sample)
     return trace_to_sample
 
 
@@ -529,8 +514,6 @@ def evaluate(
             for d in monte_carlo_runs:
                 for k, v in d.items():
                     trace_to_samples[k].append(v)
-            # print("_________________________")
-            # print("trace_to_samples", trace_to_samples.keys())
             return sum(np.average(v) for v in trace_to_samples.values())
 
         case _:
