@@ -91,15 +91,15 @@ def deriv(expr: GExpr, context: dict[Sym, Sym], delta=True) -> GExpr:
             return (dleft * right - left * dright) / (right * right)
 
         case SingularDivision(numerator, x, s, power):
-            # Derivative d/ds f(s, x) / (x - s)^power
-            # = f(s, x) / (x - s)^(power + 1) + df/ds(s, x) * power / (x - s)^power
+            # Derivative d/ds (f(s, x) / (x - s)^power)
+            # = df/ds(s, x)/ (x - s)^power + f(s, x) * power / (x - s)^(power + 1)
             if context.get(s.name) is not None:
                 dx = Sym(f"dx")
-                # dnum/dx * num / (x - s)^power
-                dnum_dx =  substitute(deriv(numerator, {x.name: dx}, delta), {dx: Const(1)})
+                # dnum/ds / (x - s)^power
+                dnum_s =  substitute(deriv(numerator, context, delta), {context[x.name]: Const(0)})
                 return (
-                    SingularDivision(dnum_dx, x, s, power)
-                    + SingularDivision(numerator * Const(power), x, s, power + 1) * deriv(s, context, delta)
+                    SingularDivision(dnum_s, x, s, power)
+                    + SingularDivision(numerator, x, s, power + 1) * deriv(s, context, delta)
                 )
             else:
                 return SingularDivision(deriv(numerator, context, delta), x, s, power)

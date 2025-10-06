@@ -12,6 +12,7 @@ from potto.lang.grammar import (
     Delta,
     Function,
     App,
+    SingularDivision,
 )
 from potto.lang.samples import VarVal
 from potto.lang.evaluate import evaluate
@@ -80,6 +81,12 @@ def simplify(expr, var_val=None) -> GExpr:
                 return Const(0)
             else:
                 return IfElse(cond, ib, eb)
+
+        case SingularDivision(numerator, x, s, power):
+            snum = simplify(numerator, var_val)
+            if snum == Const(0):
+                return Const(0)
+            return SingularDivision(snum, x, s, power)
 
         case Delta():
             return expr

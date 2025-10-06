@@ -377,25 +377,24 @@ def evaluate(
                     s_val = evaluate(s, env, num_samples, gen_samples)
                     return num_val / ((x_val - s_val) ** power)
                 if power == 2:
-                    # Use endpoint reduction and a reduced power-1 term with higher derivatives
-                    # Reference: singular_integrate._singular_integrate for pow > 1
                     s_val = evaluate(s, env, num_samples, gen_samples)
                     x_val = evaluate(x, env, num_samples, gen_samples)
 
-
-                    # Boundary terms: sum_{i=1}^{power-1} - (i-1)! * ( f^{(i-1)}(b)/(b-s)^i - f^{(i-1)}(a)/(a-s)^i )
+                    # H ∫_a^b (f(x) / (x - s)^2) dx
+                    # = C ∫_a^b (f'(x) / (x - s)) dx − [ f(x)/(x - s) ]_a^b
+                    # = C ∫_a^b (f'(x) / (x - s)) dx − (f(b)/(b-s) − f(a)/(a-s))
+                    # = C ∫_a^b (f'(x) / (x - s)) dx + f(a)/(a-s) − f(b)/(b-s)
                     dx = Var(f"d{x.name}")
-                    i = 2
                     lo_env = Environment({x.name: lo}, env)
-                    num_a = evaluate(numerator, lo_env)
+                    num_a = naive_evaluate(numerator, lo_env)
                     hi_env = Environment({x.name: hi}, env)
-                    num_b = evaluate(numerator, hi_env)
-                    # x/(x - 0.5) |^1_0 = 1/(1 - 0.5) - 0/(0 - 0.5) = 2
+                    num_b = naive_evaluate(numerator, hi_env)
+                    # f(a)/(a-s) − f(b)/(b-s)
                     boundary_total = (num_a / (lo - s_val) - num_b / (hi - s_val)) * (1 / gen_samples[x.name].weight)
-                    
-                    # Reduced singular division term with power 1 on (power-1)-th derivative
+
                     new_env = Environment({dx.name: 1}, env)
-                    dnum_dx = evaluate(deriv(_ir_to_gexpr(numerator), {x.name: dx.name}), new_env, num_samples, gen_samples)
+                    dnum_dx = naive_evaluate(deriv(_ir_to_gexpr(numerator), {x.name: dx.name}), new_env)
+                    # C ∫_a^b (f'(x) / (x - s)) dx
                     pow1_term = dnum_dx / (x_val - s_val)
 
                     # Attach boundary terms to a single child trace to avoid double-counting per run
@@ -711,6 +710,9 @@ def _ir_to_gexpr(expr: IREnv):
             if l is None or r is None:
                 return None
             return g.Div(l, r)
+        case UnaryBuiltin(e) as ubi_expr:
+            converted_e = _ir_to_gexpr(e)
+            return type(ubi_expr.ubi)(converted_e)
         case _:
             return None
 
