@@ -16,8 +16,12 @@ from potto.lang.grammar import (
     IfElse,
     heaviside,
     SingularDivision,
+    Program,
+    Assign,
+    Seq,
+    IfPos,
 )
-from potto.lang.evaluate import evaluate, evaluate_all
+from potto.lang.evaluate import evaluate, evaluate_all, evaluate_program
 from potto.lang.derivative import deriv
 from potto.lang.ast_size import get_ast_size
 

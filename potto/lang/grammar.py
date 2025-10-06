@@ -327,3 +327,35 @@ class UnaryBuiltin(GExpr):
 
 def heaviside(expr):
     return IfElse(expr, Const(1.0), Const(0.0))
+
+
+# ============================================================================
+# Program constructs
+# ============================================================================
+
+@dataclass(frozen=True)
+class Program(ABC):
+    """Base class for program constructs."""
+    pass
+
+
+@dataclass(frozen=True)
+class Assign(Program):
+    """Assignment statement: target = expr"""
+    target: Var
+    expr: GExpr
+
+
+@dataclass(frozen=True)
+class Seq(Program):
+    """Sequential composition: first; second"""
+    first: Program
+    second: Program
+
+
+@dataclass(frozen=True)
+class IfPos(Program):
+    """Conditional branch: ifpos(condition) then_branch else else_branch"""
+    condition: GExpr
+    then_branch: Program
+    else_branch: Program

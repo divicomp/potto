@@ -17,6 +17,10 @@ from potto.lang.grammar import (
     App,
     Measure,
     SingularDivision,
+    Program,
+    Assign,
+    Seq,
+    IfPos,
 )
 from potto.lang.samples import VarVal
 from potto.lang.substitute import substitute
@@ -169,6 +173,25 @@ def deriv(expr: GExpr, context: dict[Sym, Sym], delta=True) -> GExpr:
 
         case UnaryBuiltin() as expr:
             return expr.deriv(deriv, context)
+        
+        # Program constructs
+        case Assign(target, rhs):
+            # d(x = e) => dx = de
+            dtarget = Var(context[target.name]) if target.name in context else target
+            drhs = deriv(rhs, context, delta)
+            return Assign(dtarget, drhs)
+        
+        case Seq(first, second):
+            # d(p1; p2) => dp1; dp2
+            return Seq(deriv(first, context, delta), deriv(second, context, delta))
+        
+        case IfPos(condition, then_branch, else_branch):
+            # d(ifpos(e) p1 else p2) => ifpos(e) dp1 else dp2
+            return IfPos(
+                condition,
+                deriv(then_branch, context, delta),
+                deriv(else_branch, context, delta)
+            )
 
         case _:
             raise ValueError(f"Derivatives not supported for {type(expr).__name__} type object: {expr}")

@@ -744,3 +744,51 @@ def _eval_kth_derivative(numer_expr: IREnv, var_name: Sym, order: int, x_val: fl
     for j, s in enumerate(symbols_chain):
         env_overlay[s] = 1.0 if j == 0 else 0.0
     return float(naive_evaluate(dexpr, Environment(env_overlay, base_env)))
+
+
+# ============================================================================
+# Program evaluation
+# ============================================================================
+
+def evaluate_program(
+    program,
+    env_or_var_val: Environment | VarVal | None = None,
+    num_samples: int = 50,
+) -> Environment:
+    """
+    Evaluate a program and return the resulting environment.
+    
+    Args:
+        program: A Program AST node (Assign, Seq, or IfPos)
+        env_or_var_val: Initial environment or variable values
+        num_samples: Number of samples for Monte Carlo integration
+    
+    Returns:
+        Environment: The final environment after program execution
+    """
+    import potto.lang.grammar as g
+    
+    env = to_env(env_or_var_val)
+    
+    match program:
+        case g.Assign(target, expr):
+            # Evaluate the expression and update the environment
+            value = evaluate(expr, env, num_samples)
+            # Return a new environment with the updated binding
+            return Environment({target.name: value}, env)
+        
+        case g.Seq(first, second):
+            # Evaluate first program, then second with updated environment
+            env_after_first = evaluate_program(first, env, num_samples)
+            return evaluate_program(second, env_after_first, num_samples)
+        
+        case g.IfPos(condition, then_branch, else_branch):
+            # Evaluate condition and branch accordingly
+            cond_value = evaluate(condition, env, num_samples)
+            if cond_value > 0:
+                return evaluate_program(then_branch, env, num_samples)
+            else:
+                return evaluate_program(else_branch, env, num_samples)
+        
+        case _:
+            raise TypeError(f'Cannot evaluate program of type {type(program).__name__}')
