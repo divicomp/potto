@@ -334,7 +334,7 @@ def heaviside(expr):
 # ============================================================================
 
 @dataclass(frozen=True)
-class Program(ABC):
+class Program(GExpr):
     """Base class for program constructs."""
     pass
 
